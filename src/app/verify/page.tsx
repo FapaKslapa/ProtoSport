@@ -3,6 +3,7 @@
 import {useState, useRef, useEffect} from 'react';
 import Link from 'next/link';
 import {useRouter, useSearchParams} from 'next/navigation';
+import Cookies from 'js-cookie';
 
 export default function VerifyCode() {
     const [codeValues, setCodeValues] = useState(['', '', '', '']);
@@ -20,6 +21,13 @@ export default function VerifyCode() {
     ];
 
     useEffect(() => {
+        // Controlla se l'utente è già autenticato
+        const token = Cookies.get('authToken');
+        if (token) {
+            router.push('/dashboard');
+            return;
+        }
+
         const tel = searchParams.get('telefono');
         if (tel) {
             setTelefono(tel);
@@ -91,6 +99,11 @@ export default function VerifyCode() {
             // Memorizza i dati dell'utente e il token
             localStorage.setItem('user', JSON.stringify(data.user));
             localStorage.setItem('token', data.token);
+
+            // Imposta i cookie per l'autenticazione persistente
+            // Scadenza impostata a 30 giorni, modifica secondo necessità
+            Cookies.set('authToken', data.token, {expires: 30, secure: true, sameSite: 'strict'});
+            Cookies.set('userData', JSON.stringify(data.user), {expires: 30, secure: true, sameSite: 'strict'});
 
             // Reindirizza l'utente alla dashboard
             router.push('/dashboard');

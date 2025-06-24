@@ -4,14 +4,22 @@ import {useState, useEffect} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import Cookies from 'js-cookie';
 
 export default function LoginMobile() {
     const [showPopup, setShowPopup] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
+        // Controlla se l'utente è già autenticato
+        const token = Cookies.get('authToken');
+        if (token) {
+            router.push('/dashboard');
+            return;
+        }
+
         setShowPopup(true);
-    }, []);
+    }, [router]);
 
     const redirectToLogin = () => {
         router.push('/login');

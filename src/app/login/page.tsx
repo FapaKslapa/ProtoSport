@@ -1,14 +1,23 @@
 "use client";
 
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
+import Cookies from 'js-cookie';
 
 export default function Login() {
     const [phoneNumber, setPhoneNumber] = useState("+39");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const router = useRouter();
+
+    useEffect(() => {
+        // Controlla se l'utente è già autenticato
+        const token = Cookies.get('authToken');
+        if (token) {
+            router.push('/dashboard');
+        }
+    }, [router]);
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const inputValue = e.target.value;
