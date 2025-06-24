@@ -68,7 +68,8 @@ export default function LoginMobile() {
 
                 <p className="text-center pb-6">
                     <span className="text-zinc-600 text-sm">Non hai l'account?</span>{" "}
-                    <Link href="/register" className="text-black font-medium text-sm hover:underline transition-all cursor-pointer">
+                    <Link href="/register"
+                          className="text-black font-medium text-sm hover:underline transition-all cursor-pointer">
                         Registrati
                     </Link>
                 </p>

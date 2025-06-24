@@ -1,17 +1,16 @@
-import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
-import { generateVerificationCode, sendSms } from '@/lib/smsService';
+import {NextResponse} from 'next/server';
+import {getDb} from '@/lib/db';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
     try {
-        const { nome, cognome, telefono, password } = await request.json();
+        const {nome, cognome, telefono, password} = await request.json();
 
         // Validazione campi obbligatori
         if (!nome || !cognome || !telefono || !password) {
             return NextResponse.json(
-                { error: 'Tutti i campi sono obbligatori' },
-                { status: 400 }
+                {error: 'Tutti i campi sono obbligatori'},
+                {status: 400}
             );
         }
 
@@ -22,8 +21,8 @@ export async function POST(request: Request) {
 
         if (existingUser) {
             return NextResponse.json(
-                { error: 'Utente già registrato con questo numero di telefono' },
-                { status: 409 }
+                {error: 'Utente già registrato con questo numero di telefono'},
+                {status: 409}
             );
         }
 
@@ -35,40 +34,16 @@ export async function POST(request: Request) {
             'INSERT INTO users (nome, cognome, telefono, password, is_admin) VALUES (?, ?, ?, ?, 0)'
         ).run(nome, cognome, telefono, hashedPassword);
 
-        // Genera codice di verifica a 6 cifre
-        const code = generateVerificationCode();
-
-        // Imposta scadenza a 10 minuti
-        const expiresAt = new Date();
-        expiresAt.setMinutes(expiresAt.getMinutes() + 10);
-
-        // Salva il codice nel database
-        db.prepare(
-            'INSERT INTO verification_codes (telefono, code, expires_at) VALUES (?, ?, ?)'
-        ).run(telefono, code, expiresAt.toISOString());
-
-        // Invia SMS con il codice
-        const message = `Benvenuto/a ${nome}! Il tuo codice di verifica è: ${code}`;
-        const smsResult = await sendSms(telefono, message);
-
-        if (!smsResult) {
-            return NextResponse.json(
-                { error: 'Impossibile inviare SMS di verifica' },
-                { status: 500 }
-            );
-        }
-
         return NextResponse.json({
             success: true,
-            message: 'Registrazione completata. Codice di verifica inviato al tuo numero di telefono',
+            message: 'Registrazione completata con successo',
             userId: result.lastInsertRowid
         });
     } catch (error) {
         console.error('Errore durante la registrazione:', error);
         return NextResponse.json(
-            { error: 'Errore durante la registrazione' },
-            { status: 500 }
+            {error: 'Errore durante la registrazione'},
+            {status: 500}
         );
     }
 }
-

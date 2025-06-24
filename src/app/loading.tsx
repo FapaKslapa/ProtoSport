@@ -11,8 +11,8 @@ export default function Loading() {
                 <Image
                     src="/Logo Esteso.png"
                     alt="Caricamento in corso"
-                    width={120}
-                    height={120}
+                    width={240}
+                    height={240}
                     className="object-contain"
                 />
             </div>

@@ -1,15 +1,15 @@
-import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
-import { generateVerificationCode, sendSms } from '@/lib/smsService';
+import {NextResponse} from 'next/server';
+import {getDb} from '@/lib/db';
+import {generateVerificationCode, sendSms} from '@/lib/smsService';
 
 export async function POST(request: Request) {
     try {
-        const { telefono } = await request.json();
+        const {telefono} = await request.json();
 
         if (!telefono) {
             return NextResponse.json(
-                { error: 'Numero di telefono richiesto' },
-                { status: 400 }
+                {error: 'Numero di telefono richiesto'},
+                {status: 400}
             );
         }
 
@@ -20,8 +20,8 @@ export async function POST(request: Request) {
 
         if (!user) {
             return NextResponse.json(
-                { error: 'Utente non trovato' },
-                { status: 404 }
+                {error: 'Utente non trovato'},
+                {status: 404}
             );
         }
 
@@ -43,8 +43,8 @@ export async function POST(request: Request) {
 
         if (!smsResult) {
             return NextResponse.json(
-                { error: 'Impossibile inviare SMS di verifica' },
-                { status: 500 }
+                {error: 'Impossibile inviare SMS di verifica'},
+                {status: 500}
             );
         }
 
@@ -55,8 +55,8 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error('Errore durante il login:', error);
         return NextResponse.json(
-            { error: 'Errore durante il login' },
-            { status: 500 }
+            {error: 'Errore durante il login'},
+            {status: 500}
         );
     }
 }

@@ -1,24 +1,25 @@
-const SHELLRENT_USERNAME = 'username';
-const SHELLRENT_PASSWORD = 'password';
-const SHELLRENT_API_URL = 'https://api.shellrent.com/sms/send';
+import config from '../config/sms-config.json';
+
+const SHELLRENT_USERNAME = config.shellrent.username;
+const SHELLRENT_PASSWORD = config.shellrent.password;
+const SHELLRENT_API_URL = config.shellrent.apiUrl;
 
 export async function sendSms(phoneNumber: string, message: string) {
     try {
         const formattedPhone = formatPhoneNumber(phoneNumber);
-        const params = new URLSearchParams({
-            username: SHELLRENT_USERNAME,
-            password: SHELLRENT_PASSWORD,
-            message: message,
-            recipient: formattedPhone,
-            sender: 'APP',
-        });
 
+        const requestData = {
+            message: message,
+            numbers: [formattedPhone],
+        };
+        console.log(`Invio SMS a ${formattedPhone}: ${message}`);
         const response = await fetch(SHELLRENT_API_URL, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/json',
+                'Authorization': `${SHELLRENT_USERNAME}.${SHELLRENT_PASSWORD}`
             },
-            body: params,
+            body: JSON.stringify(requestData),
         });
 
         const data = await response.json();
@@ -40,14 +41,13 @@ export async function sendSms(phoneNumber: string, message: string) {
 function formatPhoneNumber(phoneNumber: string): string {
     let cleaned = phoneNumber.replace(/\s+/g, '');
 
-    if (!cleaned.startsWith('+')) {
-        if (cleaned.startsWith('00')) {
-            cleaned = '+' + cleaned.substring(2);
-        } else if (!cleaned.startsWith('0')) {
-            cleaned = '+39' + cleaned;
-        } else {
-            cleaned = '+39' + cleaned.substring(1);
-        }
+    if (cleaned.startsWith('+')) {
+        cleaned = '00' + cleaned.substring(1);
+    } else if (cleaned.startsWith('00')) {
+    } else if (!cleaned.startsWith('0')) {
+        cleaned = '0039' + cleaned;
+    } else {
+        cleaned = '0039' + cleaned.substring(1);
     }
 
     return cleaned;
