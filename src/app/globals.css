@@ -77,3 +77,24 @@ input[type="tel"]:focus {
     line-height: 1.5;
     color: var(--foreground);
 }
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+select, select option {
+    color: black !important;
+}
+
+select:focus {
+    color: black !important;
+}
+
+div[ref="sliderRef"]::-webkit-scrollbar {
+    display: none;
+}

@@ -1,7 +1,7 @@
 import {NextResponse} from 'next/server';
 import {getDb} from '@/lib/db';
+import {generateToken} from '@/lib/auth';
 
-// Definizione dell'interfaccia per il record di verifica
 interface VerificationRecord {
     id: number;
     telefono: string;
@@ -9,6 +9,13 @@ interface VerificationRecord {
     created_at: string;
     expires_at: string;
     is_used: number;
+}
+
+interface User {
+    id: number;
+    nome: string;
+    cognome: string;
+    is_admin: number;
 }
 
 export async function POST(request: Request) {
@@ -22,9 +29,9 @@ export async function POST(request: Request) {
             );
         }
 
+
         const db = getDb();
 
-        // Aggiungiamo type assertion al risultato della query
         const verificationRecord = db.prepare(`
             SELECT *
             FROM verification_codes
@@ -45,19 +52,29 @@ export async function POST(request: Request) {
         db.prepare('UPDATE verification_codes SET is_used = 1 WHERE id = ?')
             .run(verificationRecord.id);
 
-        // Recupera informazioni utente
         const user = db.prepare(
             'SELECT id, nome, cognome, is_admin FROM users WHERE telefono = ?'
-        ).get(telefono);
+        ).get(telefono) as User | undefined;
 
-        // Generazione token di sessione
-        const sessionToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        console.log('Telefono originale:', telefono);
+        console.log('Utente verificato:', user);
+
+        // Verifica che l'utente esista
+        if (!user) {
+            return NextResponse.json(
+                {error: 'Utente non trovato'},
+                {status: 404}
+            );
+        }
+
+        // Generiamo un JWT token
+        const token = generateToken(user.id);
 
         return NextResponse.json({
             success: true,
             message: 'Verifica completata con successo',
             user,
-            token: sessionToken
+            token: token
         });
     } catch (error) {
         console.error('Errore durante la verifica:', error);

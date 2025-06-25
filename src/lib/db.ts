@@ -34,18 +34,19 @@ export function initDb() {
           is_admin BOOLEAN DEFAULT 0 NOT NULL
       );
 
-      -- Tabella veicoli
-      CREATE TABLE veicoli (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          utente_id INTEGER NOT NULL,
-          tipo TEXT NOT NULL,
-          marca TEXT NOT NULL,
-          modello TEXT NOT NULL,
-          anno INTEGER,
-          targa TEXT NOT NULL UNIQUE,
-          cilindrata INTEGER,
-          FOREIGN KEY (utente_id) REFERENCES users(id) ON DELETE CASCADE
-      );
+     CREATE TABLE veicoli (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    utente_id INTEGER NOT NULL,
+    tipo TEXT NOT NULL,
+    marca TEXT NOT NULL,
+    modello TEXT NOT NULL,
+    anno INTEGER,
+    targa TEXT NOT NULL,
+    cilindrata INTEGER,
+    data_creazione TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (utente_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(utente_id, targa)
+);
 
       -- Tabella servizi (tipi di tagliando)
       CREATE TABLE servizi (
