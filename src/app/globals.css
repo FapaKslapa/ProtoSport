@@ -38,10 +38,14 @@ body {
     animation: slideUp 0.5s ease-out forwards;
 }
 
-/* Assicura che i bottoni siano visibili */
+/* Rimuovi l'impostazione globale z-index per i button */
 button {
     position: relative;
-    z-index: 60;
+}
+
+/* Garantisci che i pulsanti nel modal abbiano z-index superiore */
+.z-50 button {
+    z-index: 51;
 }
 
 input[type="tel"] {

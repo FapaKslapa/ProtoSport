@@ -8,16 +8,15 @@ export default function Register() {
     const [formData, setFormData] = useState({
         nome: '',
         cognome: '',
-        telefono: '',
-        password: '',
-        confermaPassword: ''
+        prefissoTelefonico: '+39',
+        telefono: ''
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [apiError, setApiError] = useState('');
     const router = useRouter();
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const {name, value} = e.target;
         setFormData({...formData, [name]: value});
     };
@@ -27,22 +26,13 @@ export default function Register() {
 
         if (!formData.nome.trim()) newErrors.nome = "Il nome è obbligatorio";
         if (!formData.cognome.trim()) newErrors.cognome = "Il cognome è obbligatorio";
+        if (!formData.prefissoTelefonico.trim()) newErrors.prefissoTelefonico = "Il prefisso è obbligatorio";
 
         // Validazione numero telefono
         if (!formData.telefono.trim()) {
             newErrors.telefono = "Il numero di telefono è obbligatorio";
         } else if (!/^\d{10}$/.test(formData.telefono.trim())) {
             newErrors.telefono = "Inserisci un numero di telefono valido (10 cifre)";
-        }
-
-        if (!formData.password) {
-            newErrors.password = "La password è obbligatoria";
-        } else if (formData.password.length < 6) {
-            newErrors.password = "La password deve essere di almeno 6 caratteri";
-        }
-
-        if (formData.password !== formData.confermaPassword) {
-            newErrors.confermaPassword = "Le password non coincidono";
         }
 
         setErrors(newErrors);
@@ -57,6 +47,8 @@ export default function Register() {
             try {
                 setIsSubmitting(true);
 
+                const numeroCompleto = `${formData.prefissoTelefonico}${formData.telefono}`;
+
                 const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: {
@@ -65,8 +57,7 @@ export default function Register() {
                     body: JSON.stringify({
                         nome: formData.nome,
                         cognome: formData.cognome,
-                        telefono: formData.telefono,
-                        password: formData.password
+                        telefono: numeroCompleto
                     }),
                 });
 
@@ -160,61 +151,33 @@ export default function Register() {
                         >
                             Numero di telefono
                         </label>
-                        <input
-                            type="tel"
-                            name="telefono"
-                            value={formData.telefono}
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 bg-white/5 font-medium text-lg border-0 border-b-2 rounded-t-lg focus:border-white focus:outline-none transition-all duration-200"
-                            style={{
-                                color: "#fff",
-                                borderBottom: "2px solid rgba(255,255,255,0.3)"
-                            }}
-                        />
+                        <div className="flex">
+                            <input
+                                type="text"
+                                name="prefissoTelefonico"
+                                value={formData.prefissoTelefonico}
+                                onChange={handleChange}
+                                className="w-1/4 px-4 py-3 bg-white/5 font-medium text-lg border-0 border-b-2 rounded-tl-lg focus:border-white focus:outline-none transition-all duration-200"
+                                style={{
+                                    color: "#fff",
+                                    borderBottom: "2px solid rgba(255,255,255,0.3)"
+                                }}
+                            />
+                            <input
+                                type="tel"
+                                name="telefono"
+                                value={formData.telefono}
+                                onChange={handleChange}
+                                className="w-3/4 px-4 py-3 bg-white/5 font-medium text-lg border-0 border-b-2 rounded-tr-lg focus:border-white focus:outline-none transition-all duration-200"
+                                style={{
+                                    color: "#fff",
+                                    borderBottom: "2px solid rgba(255,255,255,0.3)"
+                                }}
+                            />
+                        </div>
+                        {errors.prefissoTelefonico &&
+                            <p className="mt-1 text-sm text-yellow-200">{errors.prefissoTelefonico}</p>}
                         {errors.telefono && <p className="mt-1 text-sm text-yellow-200">{errors.telefono}</p>}
-                    </div>
-
-                    <div className="transition-all duration-300 hover:translate-y-[-2px]">
-                        <label
-                            className="block mb-2 text-base font-medium"
-                            style={{color: "#ffffff"}}
-                        >
-                            Password
-                        </label>
-                        <input
-                            type="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 bg-white/5 font-medium text-lg border-0 border-b-2 rounded-t-lg focus:border-white focus:outline-none transition-all duration-200"
-                            style={{
-                                color: "#fff",
-                                borderBottom: "2px solid rgba(255,255,255,0.3)"
-                            }}
-                        />
-                        {errors.password && <p className="mt-1 text-sm text-yellow-200">{errors.password}</p>}
-                    </div>
-
-                    <div className="transition-all duration-300 hover:translate-y-[-2px]">
-                        <label
-                            className="block mb-2 text-base font-medium"
-                            style={{color: "#ffffff"}}
-                        >
-                            Conferma password
-                        </label>
-                        <input
-                            type="password"
-                            name="confermaPassword"
-                            value={formData.confermaPassword}
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 bg-white/5 font-medium text-lg border-0 border-b-2 rounded-t-lg focus:border-white focus:outline-none transition-all duration-200"
-                            style={{
-                                color: "#fff",
-                                borderBottom: "2px solid rgba(255,255,255,0.3)"
-                            }}
-                        />
-                        {errors.confermaPassword &&
-                            <p className="mt-1 text-sm text-yellow-200">{errors.confermaPassword}</p>}
                     </div>
 
                     <div className="pt-6">

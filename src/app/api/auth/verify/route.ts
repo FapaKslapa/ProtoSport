@@ -16,6 +16,7 @@ interface User {
     nome: string;
     cognome: string;
     is_admin: number;
+    is_super_admin: number;
 }
 
 export async function POST(request: Request) {
@@ -28,7 +29,6 @@ export async function POST(request: Request) {
                 {status: 400}
             );
         }
-
 
         const db = getDb();
 
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
             .run(verificationRecord.id);
 
         const user = db.prepare(
-            'SELECT id, nome, cognome, is_admin FROM users WHERE telefono = ?'
+            'SELECT id, nome, cognome, is_admin, is_super_admin FROM users WHERE telefono = ?'
         ).get(telefono) as User | undefined;
 
         console.log('Telefono originale:', telefono);
@@ -70,11 +70,15 @@ export async function POST(request: Request) {
         // Generiamo un JWT token
         const token = generateToken(user.id);
 
+        // Determina il tipo di dashboard in base al ruolo dell'utente
+        const dashboardType = user.is_admin || user.is_super_admin ? 'admin' : 'user';
+
         return NextResponse.json({
             success: true,
             message: 'Verifica completata con successo',
             user,
-            token: token
+            token: token,
+            dashboardType: dashboardType
         });
     } catch (error) {
         console.error('Errore durante la verifica:', error);

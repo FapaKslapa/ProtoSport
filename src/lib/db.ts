@@ -13,7 +13,6 @@ function ensureDirectoryExistence(filePath: string) {
     fs.mkdirSync(dirname, {recursive: true});
 }
 
-//Tabelle e metodo per creare il database
 export function initDb() {
     ensureDirectoryExistence(DB_PATH);
 
@@ -30,23 +29,24 @@ export function initDb() {
           nome TEXT NOT NULL,
           cognome TEXT NOT NULL,
           telefono TEXT NOT NULL UNIQUE,
-          password TEXT NOT NULL,
-          is_admin BOOLEAN DEFAULT 0 NOT NULL
+          is_admin BOOLEAN DEFAULT 0 NOT NULL,
+          is_super_admin BOOLEAN DEFAULT 0 NOT NULL,
+          password TEXT
       );
 
-     CREATE TABLE veicoli (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    utente_id INTEGER NOT NULL,
-    tipo TEXT NOT NULL,
-    marca TEXT NOT NULL,
-    modello TEXT NOT NULL,
-    anno INTEGER,
-    targa TEXT NOT NULL,
-    cilindrata INTEGER,
-    data_creazione TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (utente_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE(utente_id, targa)
-);
+      CREATE TABLE veicoli (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        utente_id INTEGER NOT NULL,
+        tipo TEXT NOT NULL,
+        marca TEXT NOT NULL,
+        modello TEXT NOT NULL,
+        anno INTEGER,
+        targa TEXT NOT NULL,
+        cilindrata INTEGER,
+        data_creazione TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (utente_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE(utente_id, targa)
+      );
 
       -- Tabella servizi (tipi di tagliando)
       CREATE TABLE servizi (
@@ -90,16 +90,18 @@ export function initDb() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         expires_at TIMESTAMP NOT NULL,
         is_used BOOLEAN DEFAULT 0
-  );
+      );
   
-
       -- Index
       CREATE INDEX idx_prenotazioni_data ON prenotazioni(data);
       CREATE INDEX idx_veicoli_utente ON veicoli(utente_id);
       CREATE INDEX idx_disponibilita_giorno ON disponibilita(giorno);
       CREATE INDEX idx_verification_telefono ON verification_codes(telefono);
 
-    `);
+-- Inserimento utente super admin predefinito con password 'admin'
+INSERT INTO users (nome, cognome, telefono, is_admin, is_super_admin, password)
+VALUES ('Admin', 'Admin', 'admin', 1, 1, '$2b$10$2Z5sVH.joMAIhTJjb0Oeg.AXYs6NrFnjQIcz7DG.H0DShyMQkuRRq');
+`);
 
         db.exec(`
       CREATE TRIGGER check_disponibilita_before_insert
