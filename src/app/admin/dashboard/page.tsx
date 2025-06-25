@@ -31,6 +31,12 @@ export default function AdminDashboard() {
         prezzo: 0
     });
 
+    const handleLogout = () => {
+        Cookies.remove('authToken');
+        Cookies.remove('userData');
+
+        router.push('/');
+    };
     useEffect(() => {
         const token = Cookies.get('authToken');
         if (!token) {
@@ -308,18 +314,17 @@ export default function AdminDashboard() {
 
                     <button
                         className="text-gray-600 flex flex-col items-center justify-center"
-                        onClick={() => setShowModificaOrarioModal(true)}
+                        onClick={handleLogout}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
                              stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>
-                        <span className="text-xs mt-1">Orari</span>
+                        <span className="text-xs mt-1">Logout</span>
                     </button>
                 </div>
             </nav>
-
             {/* Modal per orari */}
             {showOrariModal && (
                 <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">

@@ -180,7 +180,7 @@ export default function SuperAdminDashboard() {
     const handleLogout = () => {
         Cookies.remove('adminAuthToken');
         Cookies.remove('adminUserData');
-        router.push('/admin-login');
+        router.push('/');
     };
 
     if (isLoading) {
@@ -207,9 +207,7 @@ export default function SuperAdminDashboard() {
                 </div>
             </nav>
 
-            {/* Contenuto principale */}
             <main className="flex-grow p-4 max-w-full mx-auto">
-                {/* Messaggio di benvenuto */}
                 <div className="bg-white shadow-md rounded-lg p-4 mb-6">
                     <h2 className="text-xl font-bold text-black">
                         Benvenuto, {user?.nome} {user?.cognome}
@@ -219,7 +217,6 @@ export default function SuperAdminDashboard() {
                     </p>
                 </div>
 
-                {/* Messaggio di successo o errore */}
                 {successMessage && (
                     <div className="p-3 mb-4 rounded-md bg-green-100 text-green-800">
                         {successMessage}
@@ -232,7 +229,6 @@ export default function SuperAdminDashboard() {
                     </div>
                 )}
 
-                {/* Lista admin */}
                 <h2 className="text-xl font-medium mb-4 text-black">Gestione Amministratori</h2>
 
                 {isLoadingAction ? (
@@ -259,10 +255,8 @@ export default function SuperAdminDashboard() {
                 )}
             </main>
 
-            {/* Modal per aggiungere/modificare un admin */}
             {showModal && (
                 <div className="fixed inset-0 z-50 overflow-hidden">
-                    {/* Area cliccabile trasparente invece dell'overlay scuro */}
                     <div className="absolute inset-0" onClick={handleCloseModal}></div>
 
                     <div className="fixed inset-0 flex items-end justify-center pointer-events-none">
@@ -301,7 +295,6 @@ export default function SuperAdminDashboard() {
                 </div>
             )}
 
-            {/* Barra di navigazione inferiore */}
             <nav className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200 h-16 px-4 z-40">
                 <div className="flex items-center justify-around h-full max-w-md mx-auto">
                     <button className="text-gray-600 flex flex-col items-center justify-center">

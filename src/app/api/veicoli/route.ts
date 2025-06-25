@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         const db = getDb();
 
         /// Verifica che la targa non sia già presente per lo stesso utente
-        const esistente = db.prepare('SELECT id FROM veicoli WHERE targa = ? AND utente_id = ?').get(targa, userId);
+        const esistente = db.prepare('SELECT id FROM veicoli WHERE targa = ? AND user_id = ?').get(targa, userId);
         if (esistente) {
             return NextResponse.json(
                 {success: false, message: 'Hai già registrato un veicolo con questa targa'},
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
         // Inserisci il veicolo
         const result = db.prepare(`
-            INSERT INTO veicoli (utente_id, tipo, marca, modello, anno, targa, cilindrata)
+            INSERT INTO veicoli (user_id, tipo, marca, modello, anno, targa, cilindrata)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `).run(userId, tipo, marca, modello, anno || null, targa, cilindrata || null);
 
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
                    cilindrata,
                    data_creazione
             FROM veicoli
-            WHERE utente_id = ?
+            WHERE user_id = ?
             ORDER BY data_creazione DESC
         `).all(userId);
 
