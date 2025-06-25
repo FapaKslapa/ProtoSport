@@ -60,10 +60,11 @@ export function initDb() {
       -- Tabella disponibilità (orari admin)
       CREATE TABLE disponibilita (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          giorno DATE NOT NULL,
+          giorno_settimana INTEGER NOT NULL CHECK (giorno_settimana BETWEEN 0 AND 6),
           ora_inizio TIME NOT NULL,
           ora_fine TIME NOT NULL,
-          CHECK (ora_inizio < ora_fine)
+          CHECK (ora_inizio < ora_fine),
+          UNIQUE(giorno_settimana)    
       );
 
       -- Tabella prenotazioni
@@ -95,7 +96,7 @@ export function initDb() {
       -- Index
       CREATE INDEX idx_prenotazioni_data ON prenotazioni(data);
       CREATE INDEX idx_veicoli_utente ON veicoli(utente_id);
-      CREATE INDEX idx_disponibilita_giorno ON disponibilita(giorno);
+      CREATE INDEX idx_disponibilita_giorno ON disponibilita(giorno_settimana);
       CREATE INDEX idx_verification_telefono ON verification_codes(telefono);
 
 -- Inserimento utente super admin predefinito con password 'admin'
@@ -111,7 +112,7 @@ VALUES ('Admin', 'Admin', 'admin', 1, 1, '$2b$10$2Z5sVH.joMAIhTJjb0Oeg.AXYs6NrFn
           SELECT CASE
               WHEN NOT EXISTS (
                   SELECT 1 FROM disponibilita
-                  WHERE giorno = NEW.data
+                  WHERE giorno_settimana = strftime('%w', NEW.data)
                   AND ora_inizio <= NEW.ora_inizio
                   AND ora_fine >= NEW.ora_fine
               ) THEN RAISE(ABORT, 'Orario non disponibile')
