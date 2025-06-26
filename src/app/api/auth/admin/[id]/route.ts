@@ -1,19 +1,19 @@
-// src/app/api/auth/admin/[id]/route.ts
-import {NextResponse} from 'next/server';
+import {NextRequest, NextResponse} from 'next/server';
 import {getDb} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
-import {NextRequest} from 'next/server';
 
 interface User {
     id: number;
     is_super_admin: number;
 }
 
-// DELETE: Elimina un admin
-export async function DELETE(
-    request: NextRequest,
-    {params}: { params: { id: string } }
-) {
+// Helper per estrarre l'id dalla URL
+function getIdFromUrl(request: NextRequest): string | null {
+    const match = request.nextUrl.pathname.match(/\/admin\/([^/]+)/);
+    return match ? match[1] : null;
+}
+
+export async function DELETE(request: NextRequest) {
     try {
         const userId = verifyToken(request);
 
@@ -26,7 +26,6 @@ export async function DELETE(
 
         const db = getDb();
 
-        // Verifica se l'utente è un super admin
         const requestUser = db.prepare(
             'SELECT is_super_admin FROM users WHERE id = ?'
         ).get(userId) as User | undefined;
@@ -38,9 +37,15 @@ export async function DELETE(
             );
         }
 
-        const adminId = params.id;
+        const adminId = getIdFromUrl(request);
 
-        // Verifica che l'admin da eliminare esista e non sia un super admin
+        if (!adminId) {
+            return NextResponse.json(
+                {error: 'ID admin non valido'},
+                {status: 400}
+            );
+        }
+
         const adminToDelete = db.prepare(
             'SELECT is_super_admin FROM users WHERE id = ?'
         ).get(adminId) as User | undefined;
@@ -59,7 +64,6 @@ export async function DELETE(
             );
         }
 
-        // Elimina l'admin
         db.prepare('DELETE FROM users WHERE id = ?').run(adminId);
 
         return NextResponse.json({
@@ -75,11 +79,7 @@ export async function DELETE(
     }
 }
 
-// PUT: Aggiorna un admin
-export async function PUT(
-    request: NextRequest,
-    {params}: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest) {
     try {
         const userId = verifyToken(request);
 
@@ -104,7 +104,15 @@ export async function PUT(
             );
         }
 
-        const adminId = params.id;
+        const adminId = getIdFromUrl(request);
+
+        if (!adminId) {
+            return NextResponse.json(
+                {error: 'ID admin non valido'},
+                {status: 400}
+            );
+        }
+
         const {nome, cognome, telefono} = await request.json();
 
         if (!nome || !cognome || !telefono) {
@@ -114,7 +122,6 @@ export async function PUT(
             );
         }
 
-        // Verifica che l'admin da modificare esista e non sia un super admin
         const adminToUpdate = db.prepare(
             'SELECT is_super_admin FROM users WHERE id = ?'
         ).get(adminId) as User | undefined;

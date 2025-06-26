@@ -8,6 +8,7 @@ import VeicoloForm from '@/app/components/VeicoloForm';
 import VeicoloCard from '@/app/components/VeicoloCard';
 import ServizioCard from '@/app/components/ServizioCardUser';
 import PrenotazioneModal from '@/app/components/PrenotazioneModal';
+import PrenotazioniUtenteModal from '@/app/components/PrenotazioneUtenteModal';
 
 type Veicolo = {
     id: number;
@@ -40,6 +41,44 @@ export default function Dashboard() {
     const [showPrenotaModal, setShowPrenotaModal] = useState(false);
     const [selectedServizio, setSelectedServizio] = useState<number | null>(null);
     const [isPrenotazioneLoading, setIsPrenotazioneLoading] = useState(false);
+
+    const [showPrenotazioni, setShowPrenotazioni] = useState(false);
+    const [prenotazioni, setPrenotazioni] = useState<any[]>([]);
+    const [isLoadingPrenotazioni, setIsLoadingPrenotazioni] = useState(false);
+
+    const fetchPrenotazioni = async () => {
+        setIsLoadingPrenotazioni(true);
+        try {
+            const res = await fetch('/api/prenotazioni');
+            const data = await res.json();
+            if (data.success) {
+                const oggi = new Date();
+                const future = (data.data || []).filter((p: any) => {
+                    const d = new Date(p.data_prenotazione);
+                    d.setHours(0, 0, 0, 0);
+                    oggi.setHours(0, 0, 0, 0);
+                    return d >= oggi;
+                }).sort((a: any, b: any) => {
+                    if (a.data_prenotazione === b.data_prenotazione) {
+                        return a.ora_inizio.localeCompare(b.ora_inizio);
+                    }
+                    return a.data_prenotazione.localeCompare(b.data_prenotazione);
+                });
+                setPrenotazioni(future.map((p: any) => ({
+                    id: p.id,
+                    servizio_nome: p.servizio_nome,
+                    data_prenotazione: p.data_prenotazione,
+                    ora_inizio: p.ora_inizio,
+                    ora_fine: p.ora_fine,
+                    stato: p.stato,
+                    veicolo: `${p.marca} ${p.modello}`,
+                    targa: p.targa
+                })));
+            }
+        } finally {
+            setIsLoadingPrenotazioni(false);
+        }
+    };
 
     const fetchVeicoli = async () => {
         try {
@@ -158,16 +197,29 @@ export default function Dashboard() {
 
     return (
         <div className="flex flex-col min-h-screen bg-white pb-16">
-            <nav className="w-full py-4 px-6" style={{backgroundColor: "#FA481B"}}>
-                <div className="flex justify-center items-center">
-                    <Image
-                        src="/Logo Compresso.png"
-                        alt="Logo"
-                        width={180}
-                        height={60}
-                        className="object-contain filter brightness-0 invert"
-                        priority
-                    />
+            <nav className="w-full py-4 px-6 relative" style={{backgroundColor: "#FA481B"}}>
+                <div className="flex justify-between items-center">
+                    <div className="flex-1 flex justify-center">
+                        <Image
+                            src="/Logo Compresso.png"
+                            alt="Logo"
+                            width={180}
+                            height={60}
+                            className="object-contain filter invert brightness-0"
+                            priority
+                        />
+                    </div>
+                    <button
+                        onClick={handleLogout}
+                        className="text-white flex flex-col items-center justify-center ml-4"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                             stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                        <span className="text-xs mt-1">Logout</span>
+                    </button>
                 </div>
             </nav>
 
@@ -235,7 +287,21 @@ export default function Dashboard() {
                         </svg>
                         <span className="text-xs mt-1">Home</span>
                     </button>
-
+                    <button
+                        disabled={isLoadingVeicoli || isLoadingServizi}
+                        onClick={() => {
+                            fetchPrenotazioni();
+                            setShowPrenotazioni(true);
+                        }}
+                        className="text-gray-600 flex flex-col items-center justify-center"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                             stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span className="text-xs mt-1">Prenotazioni</span>
+                    </button>
                     <button
                         onClick={() => setShowModal(true)}
                         className="bg-red-600 text-white rounded-full h-14 w-14 flex items-center justify-center shadow-lg transform -translate-y-3"
@@ -247,15 +313,28 @@ export default function Dashboard() {
                     </button>
 
                     <button
-                        onClick={handleLogout}
                         className="text-gray-600 flex flex-col items-center justify-center"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                             stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                             stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round"
+                                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.01c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.01 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.01 2.573c.94 1.543-.827 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.01c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.572-1.01c-1.543.94-3.31-.827-2.37-2.37a1.724 1.724 0 00-1.01-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.01-2.572c-.94-1.543.827-3.31 2.37-2.37.996.608 2.29.07 2.572-1.01z"/>
+                            <circle cx="12" cy="12" r="3"/>
                         </svg>
-                        <span className="text-xs mt-1">Logout</span>
+                        <span className="text-xs mt-1">Impostazioni</span>
+                    </button>
+
+                    <button
+                        className="text-gray-600 flex flex-col items-center justify-center"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                             stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round"
+                                  d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"/>
+                            <path strokeLinecap="round" strokeLinejoin="round"
+                                  d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"/>
+                        </svg>
+                        <span className="text-xs mt-1">Profilo</span>
                     </button>
                 </div>
             </nav>
@@ -329,6 +408,12 @@ export default function Dashboard() {
                     </div>
                 </div>
             )}
+
+            <PrenotazioniUtenteModal
+                prenotazioni={prenotazioni}
+                isOpen={showPrenotazioni}
+                onClose={() => setShowPrenotazioni(false)}
+            />
         </div>
     );
 }
