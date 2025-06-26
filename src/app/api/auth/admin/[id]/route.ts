@@ -1,16 +1,11 @@
-import {NextRequest, NextResponse} from 'next/server';
+import {NextResponse} from 'next/server';
 import {getDb} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
+import {NextRequest} from 'next/server';
 
 interface User {
     id: number;
     is_super_admin: number;
-}
-
-// Helper per estrarre l'id dalla URL
-function getIdFromUrl(request: NextRequest): string | null {
-    const match = request.nextUrl.pathname.match(/\/admin\/([^/]+)/);
-    return match ? match[1] : null;
 }
 
 export async function DELETE(request: NextRequest) {
@@ -26,6 +21,7 @@ export async function DELETE(request: NextRequest) {
 
         const db = getDb();
 
+        // Verifica se l'utente è un super admin
         const requestUser = db.prepare(
             'SELECT is_super_admin FROM users WHERE id = ?'
         ).get(userId) as User | undefined;
@@ -37,15 +33,10 @@ export async function DELETE(request: NextRequest) {
             );
         }
 
-        const adminId = getIdFromUrl(request);
+        // Estrai l'id dalla URL
+        const adminId = request.nextUrl.pathname.split('/').pop();
 
-        if (!adminId) {
-            return NextResponse.json(
-                {error: 'ID admin non valido'},
-                {status: 400}
-            );
-        }
-
+        // Verifica che l'admin da eliminare esista e non sia un super admin
         const adminToDelete = db.prepare(
             'SELECT is_super_admin FROM users WHERE id = ?'
         ).get(adminId) as User | undefined;
@@ -64,6 +55,7 @@ export async function DELETE(request: NextRequest) {
             );
         }
 
+        // Elimina l'admin
         db.prepare('DELETE FROM users WHERE id = ?').run(adminId);
 
         return NextResponse.json({
@@ -104,15 +96,8 @@ export async function PUT(request: NextRequest) {
             );
         }
 
-        const adminId = getIdFromUrl(request);
-
-        if (!adminId) {
-            return NextResponse.json(
-                {error: 'ID admin non valido'},
-                {status: 400}
-            );
-        }
-
+        // Estrai l'id dalla URL
+        const adminId = request.nextUrl.pathname.split('/').pop();
         const {nome, cognome, telefono} = await request.json();
 
         if (!nome || !cognome || !telefono) {
@@ -122,6 +107,7 @@ export async function PUT(request: NextRequest) {
             );
         }
 
+        // Verifica che l'admin da modificare esista e non sia un super admin
         const adminToUpdate = db.prepare(
             'SELECT is_super_admin FROM users WHERE id = ?'
         ).get(adminId) as User | undefined;

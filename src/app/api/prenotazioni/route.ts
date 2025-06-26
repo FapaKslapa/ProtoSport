@@ -145,3 +145,35 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+
+// GET - Recupera tutte le prenotazioni dell'utente autenticato
+export async function GET(request: NextRequest) {
+    try {
+        const userId = verifyToken(request);
+        if (!userId) {
+            return NextResponse.json(
+                {success: false, error: 'Non autorizzato'},
+                {status: 401}
+            );
+        }
+
+        const db = getDb();
+        // Recupera le prenotazioni dell'utente con info veicolo e servizio
+        const prenotazioni = db.prepare(`
+            SELECT p.*, s.nome as servizio_nome, s.prezzo, s.durata_minuti, v.marca, v.modello, v.targa
+            FROM prenotazioni p
+                     JOIN servizi s ON p.servizio_id = s.id
+                     JOIN veicoli v ON p.veicolo_id = v.id
+            WHERE p.user_id = ?
+            ORDER BY p.data_prenotazione DESC, p.ora_inizio DESC
+        `).all(userId);
+
+        return NextResponse.json({success: true, data: prenotazioni});
+    } catch (error) {
+        console.error('Errore nel recupero delle prenotazioni:', error);
+        return NextResponse.json(
+            {success: false, error: 'Errore nel recupero delle prenotazioni'},
+            {status: 500}
+        );
+    }
+}

@@ -69,7 +69,10 @@ export async function POST(request: Request) {
 
         // Invia SMS (la funzione sendSms già gestisce il formato del numero)
         const message = `Il tuo codice di verifica è: ${code}`;
+        if(process.env.NODE_ENV !== 'development')
         await sendSms(telefono, message);
+        else
+            console.log(message);
 
         return NextResponse.json({
             success: true,

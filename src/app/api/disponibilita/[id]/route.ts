@@ -15,12 +15,9 @@ interface Disponibilita {
 }
 
 // GET - Ottieni una disponibilità specifica
-export async function GET(
-    request: NextRequest,
-    {params}: { params: { id: string } }
-) {
+export async function GET(request: NextRequest) {
     try {
-        const id = params.id;
+        const id = request.nextUrl.pathname.split('/').pop();
         const db = getDb();
         const disponibilita = db.prepare('SELECT * FROM disponibilita WHERE id = ?').get(id) as Disponibilita;
 
@@ -42,10 +39,7 @@ export async function GET(
 }
 
 // PUT - Aggiorna una disponibilità
-export async function PUT(
-    request: NextRequest,
-    {params}: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest) {
     try {
         const userId = verifyToken(request);
         if (!userId) {
@@ -64,7 +58,7 @@ export async function PUT(
             );
         }
 
-        const id = params.id;
+        const id = request.nextUrl.pathname.split('/').pop();
         const {giorno_settimana, ora_inizio, ora_fine} = await request.json();
 
         if (giorno_settimana === undefined || !ora_inizio || !ora_fine) {
@@ -83,7 +77,7 @@ export async function PUT(
 
         if (ora_inizio >= ora_fine) {
             return NextResponse.json(
-                {success: false, error: 'L\'ora di inizio deve essere precedente all\'ora di fine'},
+                {success: false, error: "L'ora di inizio deve essere precedente all'ora di fine"},
                 {status: 400}
             );
         }
@@ -111,22 +105,19 @@ export async function PUT(
 
         return NextResponse.json({
             success: true,
-            data: {id: parseInt(id), giorno_settimana, ora_inizio, ora_fine}
+            data: {id: parseInt(id as string), giorno_settimana, ora_inizio, ora_fine}
         });
     } catch (error) {
-        console.error('Errore nell\'aggiornamento della disponibilità:', error);
+        console.error("Errore nell'aggiornamento della disponibilità:", error);
         return NextResponse.json(
-            {success: false, error: 'Errore nell\'aggiornamento della disponibilità'},
+            {success: false, error: "Errore nell'aggiornamento della disponibilità"},
             {status: 500}
         );
     }
 }
 
 // DELETE - Elimina una disponibilità
-export async function DELETE(
-    request: NextRequest,
-    {params}: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest) {
     try {
         const userId = verifyToken(request);
         if (!userId) {
@@ -145,7 +136,7 @@ export async function DELETE(
             );
         }
 
-        const id = params.id;
+        const id = request.nextUrl.pathname.split('/').pop();
 
         const disponibilita = db.prepare('SELECT * FROM disponibilita WHERE id = ?').get(id) as Disponibilita;
         if (!disponibilita) {
@@ -159,9 +150,9 @@ export async function DELETE(
 
         return NextResponse.json({success: true, message: 'Disponibilità eliminata con successo'});
     } catch (error) {
-        console.error('Errore nell\'eliminazione della disponibilità:', error);
+        console.error("Errore nell'eliminazione della disponibilità:", error);
         return NextResponse.json(
-            {success: false, error: 'Errore nell\'eliminazione della disponibilità'},
+            {success: false, error: "Errore nell'eliminazione della disponibilità"},
             {status: 500}
         );
     }
