@@ -1,487 +1,334 @@
 "use client";
 
-import {useState, useEffect} from 'react';
-import {useRouter} from 'next/navigation';
-import Image from 'next/image';
-import Cookies from 'js-cookie';
-import VeicoloForm from '@/app/components/VeicoloForm';
-import VeicoloCard from '@/app/components/VeicoloCard';
-import ServizioCard from '@/app/components/ServizioCardUser';
+                                import {useState, useEffect} from 'react';
+                                import {useRouter} from 'next/navigation';
+                                import Image from 'next/image';
+                                import Cookies from 'js-cookie';
+                                import VeicoloForm from '@/app/components/VeicoloForm';
+                                import VeicoloCard from '@/app/components/VeicoloCard';
+                                import ServizioCard from '@/app/components/ServizioCardUser';
+                                import PrenotazioneModal from '@/app/components/PrenotazioneModal';
 
-type Veicolo = {
-    id: number;
-    marca: string;
-    modello: string;
-    targa: string;
-    tipo: string;
-    anno?: number;
-    cilindrata?: number;
-};
+                                type Veicolo = {
+                                    id: number;
+                                    marca: string;
+                                    modello: string;
+                                    targa: string;
+                                    tipo: string;
+                                    anno?: number;
+                                    cilindrata?: number;
+                                };
 
-type Servizio = {
-    id: number;
-    nome: string;
-    descrizione: string;
-    durata_minuti: number;
-    prezzo: number;
-};
+                                type Servizio = {
+                                    id: number;
+                                    nome: string;
+                                    descrizione: string;
+                                    durata_minuti: number;
+                                    prezzo: number;
+                                };
 
-type Fascia = {
-    ora_inizio: string;
-    ora_fine: string;
-};
+                                export default function Dashboard() {
+                                    const router = useRouter();
+                                    const [isLoading, setIsLoading] = useState(true);
+                                    const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+                                    const [showModal, setShowModal] = useState(false);
+                                    const [veicoli, setVeicoli] = useState<Veicolo[]>([]);
+                                    const [servizi, setServizi] = useState<Servizio[]>([]);
+                                    const [isLoadingVeicoli, setIsLoadingVeicoli] = useState(true);
+                                    const [isLoadingServizi, setIsLoadingServizi] = useState(true);
 
-type PrenotazioneFormProps = {
-    veicoli: Veicolo[];
-    servizi: Servizio[];
-    servizioPreselezionato?: number;
-    onSave: (data: any) => void;
-    onCancel: () => void;
-};
+                                    const [showPrenotaModal, setShowPrenotaModal] = useState(false);
+                                    const [selectedServizio, setSelectedServizio] = useState<number | null>(null);
+                                    const [isPrenotazioneLoading, setIsPrenotazioneLoading] = useState(false);
 
-function PrenotazioneForm({
-                              veicoli,
-                              servizi,
-                              servizioPreselezionato,
-                              onSave,
-                              onCancel
-                          }: PrenotazioneFormProps) {
-    const [data, setData] = useState('');
-    const [servizioId, setServizioId] = useState(servizioPreselezionato || '');
-    const [veicoloId, setVeicoloId] = useState('');
-    const [fasce, setFasce] = useState<Fascia[]>([]);
-    const [oraInizio, setOraInizio] = useState('');
-    const [note, setNote] = useState('');
-    const [isLoadingFasce, setIsLoadingFasce] = useState(false);
+                                    const fetchVeicoli = async () => {
+                                        try {
+                                            setIsLoadingVeicoli(true);
+                                            const response = await fetch('/api/veicoli');
+                                            const data = await response.json();
 
-    useEffect(() => {
-        if (data && servizioId) {
-            setIsLoadingFasce(true);
-            fetch(`/api/disponibilita/fasce?data=${data}&servizio_id=${servizioId}`)
-                .then(res => res.json())
-                .then(res => setFasce(res.data || []))
-                .finally(() => setIsLoadingFasce(false));
-        } else {
-            setFasce([]);
-            setOraInizio('');
-        }
-    }, [data, servizioId]);
+                                            if (data.success) {
+                                                setVeicoli(data.veicoli || data.data || []);
+                                            } else {
+                                                setMessage({text: data.error || data.message || 'Errore nel caricamento dei veicoli', type: 'error'});
+                                            }
+                                        } catch (error) {
+                                            setMessage({text: 'Errore di connessione', type: 'error'});
+                                        } finally {
+                                            setIsLoadingVeicoli(false);
+                                        }
+                                    };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!veicoloId || !servizioId || !data || !oraInizio) return;
-        const fascia = fasce.find((f) => f.ora_inizio === oraInizio);
-        onSave({
-            veicolo_id: veicoloId,
-            servizio_id: servizioId,
-            data_prenotazione: data,
-            ora_inizio: oraInizio,
-            ora_fine: fascia?.ora_fine,
-            note
-        });
-    };
+                                    const fetchServizi = async () => {
+                                        try {
+                                            setIsLoadingServizi(true);
+                                            const response = await fetch('/api/servizi');
+                                            const data = await response.json();
 
-    return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Veicolo</label>
-                <select
-                    className="mt-1 block w-full border rounded p-2"
-                    value={veicoloId}
-                    onChange={e => setVeicoloId(e.target.value)}
-                    required
-                >
-                    <option value="">Seleziona veicolo</option>
-                    {veicoli.map((v) => (
-                        <option key={v.id} value={v.id}>
-                            {v.marca} {v.modello} ({v.targa})
-                        </option>
-                    ))}
-                </select>
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Servizio</label>
-                <select
-                    className="mt-1 block w-full border rounded p-2"
-                    value={servizioId}
-                    onChange={e => setServizioId(e.target.value)}
-                    required
-                >
-                    <option value="">Seleziona servizio</option>
-                    {servizi.map((s) => (
-                        <option key={s.id} value={s.id}>{s.nome}</option>
-                    ))}
-                </select>
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Data</label>
-                <input
-                    type="date"
-                    className="mt-1 block w-full border rounded p-2"
-                    value={data}
-                    onChange={e => setData(e.target.value)}
-                    required
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Fascia oraria</label>
-                {isLoadingFasce ? (
-                    <div className="text-gray-500 py-2">Caricamento fasce...</div>
-                ) : (
-                    <select
-                        className="mt-1 block w-full border rounded p-2"
-                        value={oraInizio}
-                        onChange={e => setOraInizio(e.target.value)}
-                        required
-                        disabled={fasce.length === 0}
-                    >
-                        <option value="">Seleziona fascia oraria</option>
-                        {fasce.map((f) => (
-                            <option key={f.ora_inizio} value={f.ora_inizio}>
-                                {f.ora_inizio} - {f.ora_fine}
-                            </option>
-                        ))}
-                    </select>
-                )}
-                {(!isLoadingFasce && fasce.length === 0 && data && servizioId) && (
-                    <div className="text-red-500 text-sm mt-1">Nessuna fascia disponibile per questa data</div>
-                )}
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Note (opzionale)</label>
-                <textarea
-                    className="mt-1 block w-full border rounded p-2"
-                    value={note}
-                    onChange={e => setNote(e.target.value)}
-                    rows={2}
-                />
-            </div>
-            <div className="flex justify-end gap-2">
-                <button
-                    type="button"
-                    className="px-4 py-2 rounded bg-gray-200 text-gray-700"
-                    onClick={onCancel}
-                >
-                    Annulla
-                </button>
-                <button
-                    type="submit"
-                    className="px-4 py-2 rounded bg-red-600 text-white"
-                    disabled={isLoadingFasce || fasce.length === 0}
-                >
-                    Prenota
-                </button>
-            </div>
-        </form>
-    );
-}
+                                            if (data.success) {
+                                                setServizi(data.data || data.servizi || []);
+                                            } else {
+                                                setMessage({text: data.error || 'Errore nel caricamento dei servizi', type: 'error'});
+                                            }
+                                        } catch (error) {
+                                            setMessage({text: 'Errore di connessione', type: 'error'});
+                                        } finally {
+                                            setIsLoadingServizi(false);
+                                        }
+                                    };
 
-export default function Dashboard() {
-    const router = useRouter();
-    const [isLoading, setIsLoading] = useState(true);
-    const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
-    const [showModal, setShowModal] = useState(false);
-    const [veicoli, setVeicoli] = useState<Veicolo[]>([]);
-    const [servizi, setServizi] = useState<Servizio[]>([]);
-    const [isLoadingVeicoli, setIsLoadingVeicoli] = useState(true);
-    const [isLoadingServizi, setIsLoadingServizi] = useState(true);
+                                    useEffect(() => {
+                                        const token = Cookies.get('authToken');
+                                        if (!token) {
+                                            router.push('/login');
+                                            return;
+                                        }
+                                        fetchVeicoli();
+                                        fetchServizi();
+                                        setIsLoading(false);
+                                    }, [router]);
 
-    const [showPrenotaModal, setShowPrenotaModal] = useState(false);
-    const [selectedServizio, setSelectedServizio] = useState<number | null>(null);
-    const [isPrenotazioneLoading, setIsPrenotazioneLoading] = useState(false);
+                                    const handleSaveVeicolo = async (veicolo: any) => {
+                                        try {
+                                            const response = await fetch('/api/veicoli', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                },
+                                                body: JSON.stringify(veicolo),
+                                            });
 
-    const fetchVeicoli = async () => {
-        try {
-            setIsLoadingVeicoli(true);
-            const response = await fetch('/api/veicoli');
-            const data = await response.json();
+                                            const data = await response.json();
 
-            if (data.success) {
-                setVeicoli(data.veicoli || data.data || []);
-            } else {
-                setMessage({text: data.error || data.message || 'Errore nel caricamento dei veicoli', type: 'error'});
-            }
-        } catch (error) {
-            setMessage({text: 'Errore di connessione', type: 'error'});
-        } finally {
-            setIsLoadingVeicoli(false);
-        }
-    };
+                                            if (data.success) {
+                                                setMessage({text: 'Veicolo aggiunto con successo!', type: 'success'});
+                                                setShowModal(false);
+                                                fetchVeicoli();
+                                            } else {
+                                                setMessage({text: data.error || data.message || 'Errore durante il salvataggio', type: 'error'});
+                                            }
+                                        } catch (error) {
+                                            setMessage({text: 'Errore di connessione', type: 'error'});
+                                        }
+                                    };
 
-    const fetchServizi = async () => {
-        try {
-            setIsLoadingServizi(true);
-            const response = await fetch('/api/servizi');
-            const data = await response.json();
+                                    const handleLogout = () => {
+                                        Cookies.remove('authToken');
+                                        router.push('/');
+                                    };
 
-            if (data.success) {
-                setServizi(data.data || data.servizi || []);
-            } else {
-                setMessage({text: data.error || 'Errore nel caricamento dei servizi', type: 'error'});
-            }
-        } catch (error) {
-            setMessage({text: 'Errore di connessione', type: 'error'});
-        } finally {
-            setIsLoadingServizi(false);
-        }
-    };
+                                    const handlePrenotaServizio = (servizioId: number) => {
+                                        setSelectedServizio(servizioId);
+                                        setShowPrenotaModal(true);
+                                    };
 
-    useEffect(() => {
-        const token = Cookies.get('authToken');
-        if (!token) {
-            router.push('/login');
-            return;
-        }
-        fetchVeicoli();
-        fetchServizi();
-        setIsLoading(false);
-    }, [router]);
+                                    const handleSavePrenotazione = async (prenotazione: any) => {
+                                        try {
+                                            setIsPrenotazioneLoading(true);
+                                            const response = await fetch('/api/prenotazioni', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                },
+                                                body: JSON.stringify(prenotazione),
+                                            });
 
-    const handleSaveVeicolo = async (veicolo: any) => {
-        try {
-            const response = await fetch('/api/veicoli', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(veicolo),
-            });
+                                            const data = await response.json();
 
-            const data = await response.json();
+                                            if (data.success) {
+                                                setMessage({text: 'Prenotazione effettuata con successo!', type: 'success'});
+                                                setShowPrenotaModal(false);
+                                            } else {
+                                                setMessage({text: data.error || 'Errore durante la prenotazione', type: 'error'});
+                                            }
+                                        } catch (error) {
+                                            setMessage({text: 'Errore di connessione', type: 'error'});
+                                        } finally {
+                                            setIsPrenotazioneLoading(false);
+                                        }
+                                    };
 
-            if (data.success) {
-                setMessage({text: 'Veicolo aggiunto con successo!', type: 'success'});
-                setShowModal(false);
-                fetchVeicoli();
-            } else {
-                setMessage({text: data.error || data.message || 'Errore durante il salvataggio', type: 'error'});
-            }
-        } catch (error) {
-            setMessage({text: 'Errore di connessione', type: 'error'});
-        }
-    };
+                                    if (isLoading) {
+                                        return (
+                                            <div className="fixed inset-0 flex items-center justify-center bg-white">
+                                                <div className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
+                                            </div>
+                                        );
+                                    }
 
-    const handleLogout = () => {
-        Cookies.remove('authToken');
-        router.push('/');
-    };
+                                    return (
+                                        <div className="flex flex-col min-h-screen bg-white pb-16">
+                                            <nav className="w-full py-4 px-6" style={{backgroundColor: "#FA481B"}}>
+                                                <div className="flex justify-center items-center">
+                                                    <Image
+                                                        src="/Logo Compresso.png"
+                                                        alt="Logo"
+                                                        width={180}
+                                                        height={60}
+                                                        className="object-contain filter brightness-0 invert"
+                                                        priority
+                                                    />
+                                                </div>
+                                            </nav>
 
-    const handlePrenotaServizio = (servizioId: number) => {
-        setSelectedServizio(servizioId);
-        setShowPrenotaModal(true);
-    };
+                                            <main className="flex-grow p-4 max-w-full mx-auto">
+                                                {message && (
+                                                    <div
+                                                        className={`p-3 mb-4 rounded-md ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                        {message.text}
+                                                    </div>
+                                                )}
 
-    const handleSavePrenotazione = async (prenotazione: any) => {
-        try {
-            setIsPrenotazioneLoading(true);
-            const response = await fetch('/api/prenotazioni', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(prenotazione),
-            });
+                                                <h2 className="text-xl font-medium mb-4 text-black">Garage</h2>
 
-            const data = await response.json();
+                                                {isLoadingVeicoli ? (
+                                                    <div className="flex justify-center my-8">
+                                                        <div
+                                                            className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
+                                                    </div>
+                                                ) : veicoli.length > 0 ? (
+                                                    <div className="flex overflow-x-auto pb-4 w-full max-w-full -mx-4 px-4">
+                                                        {veicoli.map((veicolo) => (
+                                                            <VeicoloCard key={veicolo.id} veicolo={veicolo}/>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center py-8 text-gray-500">
+                                                        <p>Non hai ancora aggiunto nessun veicolo.</p>
+                                                        <p className="mt-2">Clicca sul pulsante + per aggiungerne uno.</p>
+                                                    </div>
+                                                )}
 
-            if (data.success) {
-                setMessage({text: 'Prenotazione effettuata con successo!', type: 'success'});
-                setShowPrenotaModal(false);
-            } else {
-                setMessage({text: data.error || 'Errore durante la prenotazione', type: 'error'});
-            }
-        } catch (error) {
-            setMessage({text: 'Errore di connessione', type: 'error'});
-        } finally {
-            setIsPrenotazioneLoading(false);
-        }
-    };
+                                                <h2 className="text-xl font-medium mb-4 mt-8 text-black">Servizi Disponibili</h2>
 
-    if (isLoading) {
-        return (
-            <div className="fixed inset-0 flex items-center justify-center bg-white">
-                <div className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
-            </div>
-        );
-    }
+                                                {isLoadingServizi ? (
+                                                    <div className="flex justify-center my-8">
+                                                        <div
+                                                            className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
+                                                    </div>
+                                                ) : servizi.length > 0 ? (
+                                                    <div className="flex overflow-x-auto pb-4 w-full max-w-full -mx-4 px-4">
+                                                        {servizi.map((servizio) => (
+                                                            <div
+                                                                key={servizio.id}
+                                                                onClick={() => handlePrenotaServizio(servizio.id)}
+                                                                className="cursor-pointer transition-transform transform hover:scale-[1.02] min-w-[320px] max-w-xs mr-4 last:mr-0"
+                                                            >
+                                                                <ServizioCard servizio={servizio}/>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center py-8 text-gray-500">
+                                                        <p>Nessun servizio disponibile al momento.</p>
+                                                    </div>
+                                                )}
+                                            </main>
 
-    return (
-        <div className="flex flex-col min-h-screen bg-white pb-16">
-            <nav className="w-full py-4 px-6" style={{backgroundColor: "#FA481B"}}>
-                <div className="flex justify-center items-center">
-                    <Image
-                        src="/Logo Compresso.png"
-                        alt="Logo"
-                        width={180}
-                        height={60}
-                        className="object-contain filter brightness-0 invert"
-                        priority
-                    />
-                </div>
-            </nav>
+                                            <nav className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200 h-16 px-4 z-40">
+                                                <div className="flex items-center justify-around h-full max-w-md mx-auto">
+                                                    <button className="text-gray-600 flex flex-col items-center justify-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                                             stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                                        </svg>
+                                                        <span className="text-xs mt-1">Home</span>
+                                                    </button>
 
-            <main className="flex-grow p-4 max-w-full mx-auto">
-                {message && (
-                    <div
-                        className={`p-3 mb-4 rounded-md ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {message.text}
-                    </div>
-                )}
+                                                    <button
+                                                        onClick={() => setShowModal(true)}
+                                                        className="bg-red-600 text-white rounded-full h-14 w-14 flex items-center justify-center shadow-lg transform -translate-y-3"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                                                             stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                                                        </svg>
+                                                    </button>
 
-                <h2 className="text-xl font-medium mb-4 text-black">Garage</h2>
+                                                    <button
+                                                        onClick={handleLogout}
+                                                        className="text-gray-600 flex flex-col items-center justify-center"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                                             stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                                        </svg>
+                                                        <span className="text-xs mt-1">Logout</span>
+                                                    </button>
+                                                </div>
+                                            </nav>
 
-                {isLoadingVeicoli ? (
-                    <div className="flex justify-center my-8">
-                        <div
-                            className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
-                    </div>
-                ) : veicoli.length > 0 ? (
-                    <div className="flex overflow-x-auto pb-4 w-full max-w-full -mx-4 px-4">
-                        {veicoli.map((veicolo) => (
-                            <VeicoloCard key={veicolo.id} veicolo={veicolo}/>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-8 text-gray-500">
-                        <p>Non hai ancora aggiunto nessun veicolo.</p>
-                        <p className="mt-2">Clicca sul pulsante + per aggiungerne uno.</p>
-                    </div>
-                )}
+                                            {showModal && (
+                                                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
+                                                    <div
+                                                        className="bg-white p-6 rounded-t-3xl w-full max-w-md max-h-[90vh] overflow-y-auto pointer-events-auto z-10 shadow-2xl bottom-0"
+                                                        style={{
+                                                            transition: 'box-shadow 0.3s ease-out',
+                                                            animation: 'slideUp 0.3s ease-out',
+                                                            boxShadow: '0 -10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 40px 0 rgba(0,0,0,0.25)'
+                                                        }}
+                                                    >
+                                                        <div className="flex justify-between items-center mb-4">
+                                                            <h2 className="text-xl font-bold text-black">Aggiungi un nuovo veicolo</h2>
+                                                            <button
+                                                                onClick={() => setShowModal(false)}
+                                                                className="text-gray-500 hover:text-gray-700"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
+                                                                     viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                                          d="M6 18L18 6M6 6l12 12"/>
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                        <VeicoloForm onSave={handleSaveVeicolo}/>
+                                                    </div>
+                                                </div>
+                                            )}
 
-                <h2 className="text-xl font-medium mb-4 mt-8 text-black">Servizi Disponibili</h2>
-
-                {isLoadingServizi ? (
-                    <div className="flex justify-center my-8">
-                        <div
-                            className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
-                    </div>
-                ) : servizi.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {servizi.map((servizio) => (
-                            <div key={servizio.id} onClick={() => handlePrenotaServizio(servizio.id)}
-                                 className="cursor-pointer transition-transform transform hover:scale-[1.02]">
-                                <ServizioCard
-                                    servizio={servizio}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-8 text-gray-500">
-                        <p>Nessun servizio disponibile al momento.</p>
-                    </div>
-                )}
-            </main>
-
-            <nav className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200 h-16 px-4 z-40">
-                <div className="flex items-center justify-around h-full max-w-md mx-auto">
-                    <button className="text-gray-600 flex flex-col items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                             stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                        </svg>
-                        <span className="text-xs mt-1">Home</span>
-                    </button>
-
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="bg-red-600 text-white rounded-full h-14 w-14 flex items-center justify-center shadow-lg transform -translate-y-3"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24"
-                             stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
-                        </svg>
-                    </button>
-
-                    <button
-                        onClick={handleLogout}
-                        className="text-gray-600 flex flex-col items-center justify-center"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                             stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                        </svg>
-                        <span className="text-xs mt-1">Logout</span>
-                    </button>
-                </div>
-            </nav>
-
-            {showModal && (
-                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
-                    <div className="absolute inset-0 bg-black bg-opacity-50 pointer-events-auto"
-                         onClick={() => setShowModal(false)}></div>
-                    <div
-                        className="bg-white p-6 rounded-t-3xl w-full max-w-md max-h-[90vh] overflow-y-auto pointer-events-auto z-10"
-                        style={{
-                            transform: 'translateY(0)',
-                            transition: 'transform 0.3s ease-out',
-                            animation: 'slideUp 0.3s ease-out',
-                            boxShadow: '0 -10px 25px -5px rgba(0, 0, 0, 0.1)'
-                        }}
-                    >
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-black">Aggiungi un nuovo veicolo</h2>
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="text-gray-500 hover:text-gray-700"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                                     viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                          d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <VeicoloForm onSave={handleSaveVeicolo}/>
-                    </div>
-                </div>
-            )}
-
-            {showPrenotaModal && (
-                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
-                    <div className="absolute inset-0 bg-black bg-opacity-50 pointer-events-auto"
-                         onClick={() => setShowPrenotaModal(false)}></div>
-                    <div
-                        className="bg-white p-6 rounded-t-3xl w-full max-w-md max-h-[90vh] overflow-y-auto pointer-events-auto z-10"
-                        style={{
-                            transform: 'translateY(0)',
-                            transition: 'transform 0.3s ease-out',
-                            animation: 'slideUp 0.3s ease-out',
-                            boxShadow: '0 -10px 25px -5px rgba(0, 0, 0, 0.1)'
-                        }}
-                    >
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-black">Prenota Servizio</h2>
-                            <button
-                                onClick={() => setShowPrenotaModal(false)}
-                                className="text-gray-500 hover:text-gray-700"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                                     viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                          d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                        {isPrenotazioneLoading ? (
-                            <div className="flex justify-center py-10">
-                                <div
-                                    className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
-                            </div>
-                        ) : (
-                            <PrenotazioneForm
-                                veicoli={veicoli}
-                                servizi={servizi}
-                                servizioPreselezionato={selectedServizio || undefined}
-                                onSave={handleSavePrenotazione}
-                                onCancel={() => setShowPrenotaModal(false)}
-                            />
-                        )}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
+                                            {showPrenotaModal && (
+                                                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
+                                                    <div
+                                                        className="bg-white p-4 rounded-t-3xl w-full max-w-lg max-h-[95vh] overflow-y-auto pointer-events-auto z-10 shadow-2xl bottom-0"
+                                                        style={{
+                                                            transition: 'box-shadow 0.3s ease-out',
+                                                            animation: 'slideUp 0.3s ease-out',
+                                                            boxShadow: '0 -10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 40px 0 rgba(0,0,0,0.25)'
+                                                        }}
+                                                    >
+                                                        <div className="flex justify-between items-center mb-4">
+                                                            <h2 className="text-xl font-bold text-black">Prenota Servizio</h2>
+                                                            <button
+                                                                onClick={() => setShowPrenotaModal(false)}
+                                                                className="text-gray-500 hover:text-gray-700"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
+                                                                     viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                                          d="M6 18L18 6M6 6l12 12"/>
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                        {isPrenotazioneLoading ? (
+                                                            <div className="flex justify-center py-10">
+                                                                <div
+                                                                    className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
+                                                            </div>
+                                                        ) : (
+                                                            <PrenotazioneModal
+                                                                veicoli={veicoli}
+                                                                servizi={servizi}
+                                                                servizioPreselezionato={selectedServizio || undefined}
+                                                                onSave={handleSavePrenotazione}
+                                                                onCancel={() => setShowPrenotaModal(false)}
+                                                                isLoading={isPrenotazioneLoading}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                }

@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         }
         const durata = servizio.durata_minuti;
 
-        // Prenotazioni esistenti ordinate per ora_inizio (senza filtro stato)
+        // Prenotazioni esistenti ordinate per ora_inizio
         const prenotazioni = db.prepare(`
             SELECT ora_inizio, ora_fine
             FROM prenotazioni
@@ -73,21 +73,27 @@ export async function GET(request: NextRequest) {
             if (inizioLibero < pInizio) {
                 intervalliLiberi.push({inizio: inizioLibero, fine: pInizio});
             }
-            // Aggiungi 20 minuti di pausa dopo la fine della prenotazione
+            // 20 minuti di pausa dopo la fine della prenotazione
             inizioLibero = Math.max(inizioLibero, convertiInMinuti(p.ora_fine) + 20);
         }
         if (inizioLibero < chiusura) {
             intervalliLiberi.push({inizio: inizioLibero, fine: chiusura});
         }
 
-        // Per ogni intervallo libero, genera tutte le fasce possibili (ogni minuto)
+        // Genera slot ogni 30 minuti per ogni intervallo libero, solo se c'è spazio per la durata del servizio
         const fasce: { ora_inizio: string; ora_fine: string }[] = [];
         for (const intervallo of intervalliLiberi) {
-            for (let inizio = intervallo.inizio; inizio + durata <= intervallo.fine; inizio += 1) {
+            // Trova il primo slot allineato ai 30 minuti
+            let inizio = intervallo.inizio;
+            const offset = inizio % 30;
+            if (offset !== 0) inizio += (30 - offset);
+
+            while (inizio + durata <= intervallo.fine) {
                 fasce.push({
                     ora_inizio: convertiInOrario(inizio),
                     ora_fine: convertiInOrario(inizio + durata)
                 });
+                inizio += 30;
             }
         }
 
