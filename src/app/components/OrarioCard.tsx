@@ -8,14 +8,11 @@ interface OrarioCardProps {
 }
 
 const OrarioCard: React.FC<OrarioCardProps> = ({orari, onEdit}) => {
-    // Modificato l'ordine dei giorni per iniziare da Lunedì
     const giorni = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
-
     return (
         <div className="w-full">
             <div className="flex overflow-x-auto pb-6 -mx-4 px-4 hide-scrollbar">
                 {giorni.map((giorno, index) => {
-                    // Ricalcolo l'indice del giorno per il database (0=Domenica, 1=Lunedì, etc.)
                     const giornoIndex = (index + 1) % 7;
                     const orario = orari.find(o => o.giorno_settimana === giornoIndex);
                     const isOpen = !!orario;

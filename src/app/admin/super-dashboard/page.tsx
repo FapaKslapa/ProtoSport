@@ -1,4 +1,3 @@
-// src/app/admin/super-dashboard/page.tsx
 "use client";
 
 import {useState, useEffect} from 'react';
@@ -54,14 +53,12 @@ export default function SuperAdminDashboard() {
     };
 
     useEffect(() => {
-        // Verifica l'autenticazione come super admin
         const token = Cookies.get('adminAuthToken');
         if (!token) {
             router.push('/admin-login');
             return;
         }
 
-        // Recupera i dati dell'utente dal cookie
         const userData = Cookies.get('adminUserData');
         if (userData) {
             try {
@@ -116,7 +113,6 @@ export default function SuperAdminDashboard() {
             setEditingAdmin(null);
             fetchAdmins();
 
-            // Nascondi il messaggio di successo dopo 3 secondi
             setTimeout(() => {
                 setSuccessMessage('');
             }, 3000);
@@ -149,7 +145,6 @@ export default function SuperAdminDashboard() {
             setSuccessMessage('Admin eliminato con successo!');
             fetchAdmins();
 
-            // Nascondi il messaggio di successo dopo 3 secondi
             setTimeout(() => {
                 setSuccessMessage('');
             }, 3000);

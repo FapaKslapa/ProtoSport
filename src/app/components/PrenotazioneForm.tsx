@@ -33,7 +33,6 @@ export default function PrenotazioneForm({
         note: ''
     });
 
-    // Carica disponibilità per la data selezionata
     useEffect(() => {
         const fetchDisponibilita = async () => {
             if (!formData.data_prenotazione) return;
@@ -108,7 +107,6 @@ export default function PrenotazioneForm({
             return;
         }
 
-        // Formatta la data per l'invio
         const formattedDate = formData.data_prenotazione.toISOString().split('T')[0];
 
         onSave({

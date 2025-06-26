@@ -64,7 +64,6 @@ const OrarioForm: React.FC<OrarioFormProps> = ({orario, giornoSettimana, onSave,
         }
 
         try {
-            // Destrutturazione per escludere is_closed
             const {is_closed, ...dataToSave} = {
                 ...formData,
                 id: orario?.id,

@@ -191,7 +191,6 @@ export default function AdminDashboard() {
                     return Promise.reject(new Error(data.error));
                 }
             } else {
-                // Altrimenti creiamo un nuovo orario
                 const response = await fetch('/api/disponibilita', {
                     method: 'POST',
                     headers: {
@@ -325,46 +324,7 @@ export default function AdminDashboard() {
                     </button>
                 </div>
             </nav>
-            {/* Modal per orari */}
-            {showOrariModal && (
-                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
-                    <div
-                        className="bg-white p-6 rounded-3xl w-full max-w-md min-h-[70vh] max-h-[90vh] overflow-y-auto pointer-events-auto"
-                        style={{
-                            transform: 'translateY(0)',
-                            transition: 'transform 0.3s ease-out',
-                            animation: 'slideUp 0.3s ease-out',
-                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(0, 0, 0, 0.05)'
-                        }}
-                    >
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-black">Gestione Orari</h3>
-                            <button onClick={() => setShowOrariModal(false)}
-                                    className="text-gray-500 hover:text-gray-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                                     viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                          d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="text-black">
-                            <p className="mb-4">Qui puoi gestire gli orari di apertura dell'officina.</p>
-                            <div className="bg-gray-100 p-4 rounded-lg mb-4">
-                                <p>Funzionalità in fase di implementazione</p>
-                            </div>
-                            <button
-                                onClick={() => setShowOrariModal(false)}
-                                className="w-full py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                            >
-                                Chiudi
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal per servizi */}
+            {/* Modal servizi */}
             {showServiziModal && (
                 <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
                     <div
@@ -444,7 +404,7 @@ export default function AdminDashboard() {
                 </div>
             )}
 
-            {/* Modal per prenotazioni */}
+            {/* Modal prenotazioni */}
             {showPrenotazioniModal && (
                 <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
                     <div
@@ -483,7 +443,7 @@ export default function AdminDashboard() {
                 </div>
             )}
 
-            {/* Modal per nuovo servizio */}
+            {/* Modal nuovo servizio */}
             {showNuovoServizioModal && (
                 <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
                     <div
@@ -514,7 +474,7 @@ export default function AdminDashboard() {
                 </div>
             )}
 
-            {/* Modal per modifica servizio */}
+            {/* Modal modifica servizio */}
             {showModificaServizioModal && currentServizio && (
                 <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
                     <div

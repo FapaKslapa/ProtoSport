@@ -23,7 +23,6 @@ const FasceOrarie: React.FC<FasceOrarieProps> = ({
         return minuti % 30 === 0 && (oraFiltro ? f.ora_inizio.startsWith(oraFiltro) : true);
     });
 
-    // Ore disponibili per filtro
     const oreDisponibili = Array.from(new Set(fasce.map(f => f.ora_inizio.split(':')[0])));
 
     return (

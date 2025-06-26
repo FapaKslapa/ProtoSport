@@ -22,7 +22,6 @@ export default function Login() {
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const inputValue = e.target.value;
 
-        // Mantiene sempre il prefisso +39
         if (inputValue.startsWith("+39")) {
             setPhoneNumber(inputValue);
         } else {
@@ -56,7 +55,6 @@ export default function Login() {
                 throw new Error(data.error || 'Errore durante l\'invio del codice');
             }
 
-            // Reindirizza alla pagina di verifica con il telefono come parametro
             router.push(`/verify?telefono=${encodeURIComponent(telefono)}`);
         } catch (error) {
             console.error('Errore invio codice:', error);
@@ -69,7 +67,6 @@ export default function Login() {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen w-full"
              style={{backgroundColor: "#FA481B"}}>
-            {/* Freccia per tornare alla home */}
             <div className="absolute top-8 left-8">
                 <Link href="/">
                     <div className="text-white text-3xl cursor-pointer">

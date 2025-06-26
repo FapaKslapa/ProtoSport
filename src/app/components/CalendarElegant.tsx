@@ -14,8 +14,8 @@ import {it} from 'date-fns/locale';
 
 interface CalendarElegantProps {
     year: number;
-    month: number; // 0-based
-    selectedDate: string; // yyyy-MM-dd
+    month: number;
+    selectedDate: string;
     onSelect: (date: string) => void;
     onPrev: () => void;
     onNext: () => void;
