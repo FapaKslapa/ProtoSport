@@ -105,19 +105,24 @@ export default function VeicoloForm({onSave, initialData, onCancel}: VeicoloForm
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form
+            onSubmit={handleSubmit}
+            className="max-w-md mx-auto p-0 space-y-6"
+        >
             {error && (
                 <div className="p-3 mb-2 rounded-md bg-red-100 text-red-800 text-sm text-center">{error}</div>
             )}
+
+            {/* Marca */}
             <div>
-                <label htmlFor="marca" className="block text-sm font-semibold text-gray-700 mb-1">
+                <label htmlFor="marca" className="block text-sm font-bold text-gray-700 mb-1">
                     Marca <span className="text-red-500">*</span>
                 </label>
                 <select
                     id="marca"
                     value={marca}
                     onChange={e => setMarca(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-black bg-white"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 text-black bg-white shadow-sm transition-all duration-150 custom-select"
                     required
                 >
                     <option value="">Seleziona una marca</option>
@@ -126,16 +131,18 @@ export default function VeicoloForm({onSave, initialData, onCancel}: VeicoloForm
                     ))}
                 </select>
             </div>
+
+            {/* Modello */}
             {marca && (
                 <div>
-                    <label htmlFor="modello" className="block text-sm font-semibold text-gray-700 mb-1">
+                    <label htmlFor="modello" className="block text-sm font-bold text-gray-700 mb-1">
                         Modello <span className="text-red-500">*</span>
                     </label>
                     <select
                         id="modello"
                         value={modello}
                         onChange={e => setModello(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-black bg-white"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 text-black bg-white shadow-sm transition-all duration-150 custom-select"
                         required
                     >
                         <option value="">Seleziona un modello</option>
@@ -145,16 +152,18 @@ export default function VeicoloForm({onSave, initialData, onCancel}: VeicoloForm
                     </select>
                 </div>
             )}
+
+            {/* Anno */}
             {modello && (
                 <div>
-                    <label htmlFor="anno" className="block text-sm font-semibold text-gray-700 mb-1">
+                    <label htmlFor="anno" className="block text-sm font-bold text-gray-700 mb-1">
                         Anno
                     </label>
                     <select
                         id="anno"
                         value={anno}
                         onChange={e => setAnno(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-black bg-white"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 text-black bg-white shadow-sm transition-all duration-150 custom-select"
                     >
                         <option value="">Seleziona un anno</option>
                         {anni.map(a => (
@@ -163,16 +172,18 @@ export default function VeicoloForm({onSave, initialData, onCancel}: VeicoloForm
                     </select>
                 </div>
             )}
+
+            {/* Cilindrata */}
             {anno && (
                 <div>
-                    <label htmlFor="cilindrata" className="block text-sm font-semibold text-gray-700 mb-1">
+                    <label htmlFor="cilindrata" className="block text-sm font-bold text-gray-700 mb-1">
                         Cilindrata
                     </label>
                     <select
                         id="cilindrata"
                         value={cilindrata}
                         onChange={e => setCilindrata(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-black bg-white"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 text-black bg-white shadow-sm transition-all duration-150 custom-select"
                     >
                         <option value="">Seleziona una cilindrata</option>
                         {cilindrate.map(c => (
@@ -181,9 +192,11 @@ export default function VeicoloForm({onSave, initialData, onCancel}: VeicoloForm
                     </select>
                 </div>
             )}
+
+            {/* Targa */}
             {cilindrata && (
                 <div>
-                    <label htmlFor="targa" className="block text-sm font-semibold text-gray-700 mb-1">
+                    <label htmlFor="targa" className="block text-sm font-bold text-gray-700 mb-1">
                         Targa <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -191,31 +204,65 @@ export default function VeicoloForm({onSave, initialData, onCancel}: VeicoloForm
                         id="targa"
                         value={targa}
                         onChange={e => setTarga(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-black bg-white uppercase"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 text-black bg-white uppercase shadow-sm transition-all duration-150"
                         placeholder="Es. AB123CD"
                         required
                         maxLength={10}
                     />
                 </div>
             )}
+
+            {/* Bottoni */}
             <div className="pt-2 flex gap-2">
                 <button
                     type="submit"
-                    className={`flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-lg transition-colors duration-200${!targa ? " opacity-60 cursor-not-allowed" : ""}`}
+                    className={`flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg transition-all duration-200${!targa ? " opacity-60 cursor-not-allowed" : ""}`}
                     disabled={!targa}
                 >
-                    Salva Veicolo
+                        <span className="inline-flex items-center justify-center">
+                            Salva Veicolo
+                        </span>
                 </button>
                 {onCancel && (
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg shadow transition-colors duration-200"
+                        className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl shadow transition-all duration-200"
                     >
-                        Annulla
+                            <span className="inline-flex items-center justify-center">
+                                Annulla
+                            </span>
                     </button>
                 )}
             </div>
+            <style jsx global>{`
+                /* Migliora il pannello delle select */
+                select.custom-select {
+                    background: #fff;
+                    color: #222;
+                    font-weight: 500;
+                    border-radius: 0.75rem;
+                    box-shadow: 0 2px 8px rgba(250, 72, 27, 0.06);
+                    transition: border 0.2s, box-shadow 0.2s;
+                }
+
+                select.custom-select:focus {
+                    border-color: #ef4444;
+                    box-shadow: 0 0 0 2px #fee2e2;
+                }
+
+                select.custom-select option {
+                    background: #fff;
+                    color: #222;
+                    padding: 0.5rem 1rem;
+                    border-radius: 0.5rem;
+                }
+
+                select.custom-select option:checked, select.custom-select option:focus {
+                    background: #fee2e2;
+                    color: #b91c1c;
+                }
+            `}</style>
         </form>
     );
 }

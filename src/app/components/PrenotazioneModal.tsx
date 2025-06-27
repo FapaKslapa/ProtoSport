@@ -145,12 +145,12 @@ const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
                 />
             </div>
             <div>
-                <label className="block text-sm font-semibold text-gray-700">Note (opzionale)</label>
+                <label className="block text-sm font-semibold text-black">Note (opzionale)</label>
                 <textarea
-                    className="mt-1 block w-full border rounded-xl p-2 bg-gray-50"
+                    className="mt-1 block w-full rounded-xl p-2 bg-white text-black shadow focus:ring-2 focus:ring-red-400 border border-gray-200 focus:border-red-400 focus:outline-none transition"
                     value={note}
                     onChange={e => setNote(e.target.value)}
-                    rows={2}
+                    rows={3}
                 />
             </div>
             <div className="flex justify-end gap-2 mt-4">

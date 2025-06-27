@@ -1,6 +1,7 @@
 "use client";
 
 import React, {useState} from "react";
+import {FaCalendarAlt, FaLock} from "react-icons/fa";
 
 interface OrarioFormProps {
     orario?: {
@@ -14,7 +15,15 @@ interface OrarioFormProps {
     onCancel: () => void;
 }
 
-const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+const giorni = [
+    "Domenica",
+    "Lunedì",
+    "Martedì",
+    "Mercoledì",
+    "Giovedì",
+    "Venerdì",
+    "Sabato",
+];
 
 const OrarioForm: React.FC<OrarioFormProps> = ({
                                                    orario,
@@ -33,7 +42,7 @@ const OrarioForm: React.FC<OrarioFormProps> = ({
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value, type, checked} = e.target;
-        setFormData(f => ({
+        setFormData((f) => ({
             ...f,
             [name]: type === "checkbox" ? checked : value,
         }));
@@ -63,30 +72,60 @@ const OrarioForm: React.FC<OrarioFormProps> = ({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="text-center mb-8">
-                <h3 className="text-2xl font-semibold text-black">{giorni[formData.giorno_settimana]}</h3>
-                <p className="text-black text-sm mt-1">Imposta gli orari di apertura e chiusura</p>
+        <form
+            onSubmit={handleSubmit}
+            className="w-full max-w-md mx-auto flex flex-col gap-8 relative pb-28"
+            style={{minWidth: 320}}
+        >
+            <div className="flex items-center justify-between gap-4 mb-2">
+                <div className="flex items-center gap-3">
+                    <FaCalendarAlt className="text-red-500 w-6 h-6"/>
+                    <h3 className="text-xl font-bold text-black">
+                        {giorni[formData.giorno_settimana]}
+                    </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                    <FaLock className={`w-5 h-5 ${formData.is_closed ? "text-red-500" : "text-gray-300"}`}/>
+                    <label htmlFor="is_closed" className="text-base font-medium text-black select-none">
+                        Chiuso
+                    </label>
+                    <button
+                        type="button"
+                        aria-pressed={formData.is_closed}
+                        aria-label="Giorno di chiusura"
+                        onClick={() =>
+                            setFormData((f) => ({...f, is_closed: !f.is_closed}))
+                        }
+                        className={`w-12 h-6 rounded-full transition-colors duration-200 flex items-center px-1 ${
+                            formData.is_closed ? "bg-red-500" : "bg-gray-200"
+                        }`}
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                            if (e.key === " " || e.key === "Enter") {
+                                setFormData((f) => ({...f, is_closed: !f.is_closed}));
+                            }
+                        }}
+                    >
+    <span
+        className={`w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+            formData.is_closed ? "translate-x-5" : ""
+        }`}
+    />
+                    </button>
+                </div>
             </div>
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-8 border border-gray-100">
-                <label htmlFor="is_closed" className="text-black font-medium">Giorno di chiusura</label>
-                <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                        type="checkbox"
-                        id="is_closed"
-                        name="is_closed"
-                        checked={formData.is_closed}
-                        onChange={handleChange}
-                        className="sr-only peer"
-                    />
-                    <div
-                        className="w-12 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
-                </label>
-            </div>
+
+            <p className="text-gray-500 text-base mb-2">
+                Imposta gli orari di apertura e chiusura per questo giorno.
+            </p>
+
             {!formData.is_closed && (
-                <div className="space-y-8">
-                    <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
-                        <label htmlFor="ora_inizio" className="block text-sm font-semibold text-black mb-3">
+                <div className="flex flex-row gap-6 w-full">
+                    <div className="flex flex-col flex-1">
+                        <label
+                            htmlFor="ora_inizio"
+                            className="block text-sm font-semibold text-black mb-2"
+                        >
                             Orario di apertura
                         </label>
                         <input
@@ -95,12 +134,15 @@ const OrarioForm: React.FC<OrarioFormProps> = ({
                             id="ora_inizio"
                             value={formData.ora_inizio}
                             onChange={handleChange}
-                            className="block w-full border border-gray-300 rounded-md shadow-sm py-3 px-4 focus:outline-none focus:ring-red-500 focus:border-red-500 text-lg text-black"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-transparent bg-gray-50 text-black text-lg transition"
                             required
                         />
                     </div>
-                    <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
-                        <label htmlFor="ora_fine" className="block text-sm font-semibold text-black mb-3">
+                    <div className="flex flex-col flex-1">
+                        <label
+                            htmlFor="ora_fine"
+                            className="block text-sm font-semibold text-black mb-2"
+                        >
                             Orario di chiusura
                         </label>
                         <input
@@ -109,23 +151,51 @@ const OrarioForm: React.FC<OrarioFormProps> = ({
                             id="ora_fine"
                             value={formData.ora_fine}
                             onChange={handleChange}
-                            className="block w-full border border-gray-300 rounded-md shadow-sm py-3 px-4 focus:outline-none focus:ring-red-500 focus:border-red-500 text-lg text-black"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-transparent bg-gray-50 text-black text-lg transition"
                             required
                         />
                     </div>
                 </div>
             )}
+
             {error && (
-                <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-lg text-sm mb-6">
+                <div className="bg-red-100 text-red-800 p-4 rounded-md text-base font-semibold flex items-center gap-3">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"
+                        />
+                    </svg>
                     {error}
                 </div>
             )}
-            <div className="flex justify-end pt-6">
+
+            <div
+                className="fixed left-0 right-0 bottom-0 z-50 bg-white border-t border-gray-200 py-4 px-4 flex justify-between max-w-md mx-auto"
+                style={{boxShadow: "0 -2px 8px rgba(0,0,0,0.04)"}}
+            >
+                <button
+                    type="button"
+                    className="py-3 px-8 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all text-lg"
+                    onClick={onCancel}
+                    disabled={isSubmitting}
+                >
+                    Annulla
+                </button>
                 <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="inline-flex justify-center py-3 px-8 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                    className="py-3 px-8 bg-gradient-to-r from-red-500 to-red-400 text-white rounded-xl font-bold shadow hover:from-red-600 hover:to-red-500 transition-all text-lg flex items-center justify-center gap-2"
                 >
+                    {isSubmitting && (
+                        <svg className="animate-spin h-5 w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    strokeWidth="4"/>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                        </svg>
+                    )}
                     {isSubmitting ? "Salvataggio..." : "Salva"}
                 </button>
             </div>
