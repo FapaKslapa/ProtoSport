@@ -22,16 +22,30 @@ export default function VeicoloForm({onSave, initialData, onCancel}: VeicoloForm
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // Stati controllati, sempre coerenti con initialData
     const [marca, setMarca] = useState(initialData?.marca || "");
     const [modello, setModello] = useState(initialData?.modello || "");
     const [anno, setAnno] = useState(initialData?.anno ? initialData.anno.toString() : "");
     const [cilindrata, setCilindrata] = useState(initialData?.cilindrata ? initialData.cilindrata.toString() : "");
     const [targa, setTarga] = useState(initialData?.targa || "");
 
+    // Aggiorna i campi quando cambia initialData (es. apertura modale modifica)
+    useEffect(() => {
+        setMarca(initialData?.marca || "");
+        setModello(initialData?.modello || "");
+        setAnno(initialData?.anno ? initialData.anno.toString() : "");
+        setCilindrata(initialData?.cilindrata ? initialData.cilindrata.toString() : "");
+        setTarga(initialData?.targa || "");
+    }, [initialData]);
+
     const marche = Object.keys(catalogo).sort();
-    const modelli = marca ? Object.keys(catalogo[marca] || {}).sort() : [];
-    const anni = marca && modello ? catalogo[marca][modello]?.anni.slice().sort((a, b) => b - a) : [];
-    const cilindrate = marca && modello ? catalogo[marca][modello]?.cilindrate.slice().sort((a, b) => a - b) : [];
+    const modelli = marca && catalogo[marca] ? Object.keys(catalogo[marca]).sort() : [];
+    const anni = (marca && modello && catalogo[marca] && catalogo[marca][modello] && Array.isArray(catalogo[marca][modello].anni))
+        ? catalogo[marca][modello].anni.slice().sort((a, b) => b - a)
+        : [];
+    const cilindrate = (marca && modello && catalogo[marca] && catalogo[marca][modello] && Array.isArray(catalogo[marca][modello].cilindrate))
+        ? catalogo[marca][modello].cilindrate.slice().sort((a, b) => a - b)
+        : [];
 
     useEffect(() => {
         const fetchCatalogo = async () => {
@@ -50,6 +64,7 @@ export default function VeicoloForm({onSave, initialData, onCancel}: VeicoloForm
         fetchCatalogo();
     }, []);
 
+    // Reset dei campi dipendenti SOLO in creazione (non in modifica)
     useEffect(() => {
         if (!initialData) {
             setModello("");
@@ -58,7 +73,6 @@ export default function VeicoloForm({onSave, initialData, onCancel}: VeicoloForm
             setTarga("");
         }
     }, [marca]);
-
     useEffect(() => {
         if (!initialData) {
             setAnno("");
@@ -66,14 +80,12 @@ export default function VeicoloForm({onSave, initialData, onCancel}: VeicoloForm
             setTarga("");
         }
     }, [modello]);
-
     useEffect(() => {
         if (!initialData) {
             setCilindrata("");
             setTarga("");
         }
     }, [anno]);
-
     useEffect(() => {
         if (!initialData) setTarga("");
     }, [cilindrata]);
@@ -84,12 +96,16 @@ export default function VeicoloForm({onSave, initialData, onCancel}: VeicoloForm
             setError("Compila tutti i campi obbligatori");
             return;
         }
+        // Controllo robusto per tipo
+        const tipo = (marca && modello && catalogo[marca] && catalogo[marca][modello])
+            ? catalogo[marca][modello].tipo
+            : (initialData?.tipo || "");
         const veicolo = {
             ...initialData,
             marca,
             modello,
             anno: anno ? parseInt(anno) : null,
-            tipo: marca && modello ? catalogo[marca][modello].tipo : "",
+            tipo,
             cilindrata: cilindrata ? parseInt(cilindrata) : null,
             targa: targa.toUpperCase(),
         };

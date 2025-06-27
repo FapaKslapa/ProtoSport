@@ -152,7 +152,7 @@ export default function Dashboard() {
 
     const handleUpdateVeicolo = async (veicolo: any) => {
         try {
-            const res = await fetch("/api/veicoli", {
+            const res = await fetch(`/api/veicoli/${veicolo.id}`, {
                 method: "PUT",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(veicolo),
@@ -176,10 +176,9 @@ export default function Dashboard() {
         if (!deleteVeicoloId) return;
         setIsDeleting(true);
         try {
-            const res = await fetch("/api/veicoli", {
+            const res = await fetch(`/api/veicoli/${deleteVeicoloId}`, {
                 method: "DELETE",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({id: deleteVeicoloId}),
             });
             const data = await res.json();
             if (data.success) {
