@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import Image from 'next/image';
 
 interface Veicolo {
@@ -17,8 +17,72 @@ interface VeicoloCardProps {
     onDelete?: (id: number) => void;
 }
 
+// Funzione per ottenere/salvare immagine base64 tramite API interne
+async function getOrFetchCarImageBase64(marca: string, modello: string, anno?: number, cilindrata?: number): Promise<string | null> {
+    // 1. Prova a prendere dal db (API interna)
+    const query = new URLSearchParams({ marca, modello });
+    if (anno) query.append('anno', anno.toString());
+    const resDb = await fetch(`/api/autoFoto?${query.toString()}`);
+    if (resDb.ok) {
+        const { base64 } = await resDb.json();
+        if (base64) return base64;
+    }
+
+    // 2. Se non c'è, chiama la API esterna
+    const searchTerm = [marca, modello, anno, cilindrata ? `${cilindrata}cc` : '', 'png']
+        .filter(Boolean)
+        .join(' ');
+    const apiUrl = `https://www.carimagery.com/api.asmx/GetImageUrl?searchTerm=${encodeURIComponent(searchTerm)}`;
+    const res = await fetch(apiUrl);
+    const text = await res.text();
+    const match = text.match(/<string[^>]*>(.*?)<\/string>/);
+    if (match && match[1] && match[1].startsWith('http') && !match[1].includes('noimage')) {
+        // Scarica l'immagine e converti in base64
+        const imgRes = await fetch(match[1]);
+        const blob = await imgRes.blob();
+        const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+        // Salva nel db tramite API interna
+        await fetch('/api/autoFoto', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ marca, modello, anno: anno ?? null, base64 })
+        });
+        return base64;
+    }
+    return null;
+}
+
 const VeicoloCard: React.FC<VeicoloCardProps> = ({veicolo, onEdit, onDelete}) => {
     const {id, marca, modello, anno, targa, cilindrata} = veicolo;
+    const [imgBase64, setImgBase64] = useState<string | null>(null);
+    const [imgError, setImgError] = useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        getOrFetchCarImageBase64(marca, modello, anno, cilindrata).then(base64 => {
+            if (isMounted && base64) {
+                // Se è una GIF, non mostrarla
+                if (base64.startsWith('data:image/gif')) {
+                    setImgBase64(null);
+                    setImgError(true);
+                } else {
+                    setImgBase64(base64);
+                }
+            }
+        });
+        return () => {
+            isMounted = false;
+        };
+    }, [marca, modello, anno, cilindrata]);
+
+    // Costruisci la query Google come fallback
+    const googleQuery = [marca, modello, anno, cilindrata ? `${cilindrata}cc` : '', 'png'].filter(Boolean).join(' ');
+    const googleUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(googleQuery)}`;
 
     return (
         <div
@@ -56,14 +120,34 @@ const VeicoloCard: React.FC<VeicoloCardProps> = ({veicolo, onEdit, onDelete}) =>
                     )}
                 </div>
             )}
-            <div className="relative h-60 w-full bg-white">
-                <Image
-                    src="/placeholder.png"
-                    alt={`${marca} ${modello}`}
-                    fill
-                    style={{objectFit: 'contain'}}
-                    priority
-                />
+            <div className="relative h-60 w-full bg-white flex items-center justify-center">
+                {imgBase64 && !imgError ? (
+                    <Image
+                        src={imgBase64}
+                        alt={`${marca} ${modello}`}
+                        fill
+                        style={{objectFit: 'contain'}}
+                        priority
+                        onError={() => setImgError(true)}
+                        unoptimized
+                    />
+                ) : (
+                    <a
+                        href={googleUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full h-full flex items-center justify-center"
+                    >
+                        {/* Icona cerca online centrata, grande e rossa */}
+                        <span className="flex flex-col items-center justify-center w-full h-full text-red-600 opacity-90 hover:opacity-100 transition-opacity">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-24 h-24 mb-2" fill="none" viewBox="0 0 32 32" stroke="currentColor">
+                                <circle cx="15" cy="15" r="11" stroke="currentColor" strokeWidth={3} />
+                                <line x1="23" y1="23" x2="30" y2="30" stroke="currentColor" strokeWidth={3} strokeLinecap="round"/>
+                            </svg>
+                            <span className="text-base font-bold mt-1">Cerca online</span>
+                        </span>
+                    </a>
+                )}
             </div>
             <div className="p-5 flex flex-col items-center gap-2 flex-1">
                 <div className="flex flex-col items-center gap-2 mb-1 w-full">

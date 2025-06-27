@@ -138,6 +138,18 @@ export function initDb() {
                               END;
                           END;
                         `);
+
+        db.exec(`
+            CREATE TABLE immagini_auto
+            (
+                id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                marca   TEXT NOT NULL,
+                modello TEXT NOT NULL,
+                anno    INTEGER,
+                base64  TEXT NOT NULL,
+                UNIQUE (marca, modello, anno)
+            );
+        `);
     }
 
     return db;
@@ -151,3 +163,4 @@ export function getDb() {
     }
     return dbInstance;
 }
+

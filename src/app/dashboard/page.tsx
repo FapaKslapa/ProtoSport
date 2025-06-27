@@ -9,6 +9,7 @@ import VeicoloCard from "@/app/components/VeicoloCard";
 import ServizioCard from "@/app/components/ServizioCardUser";
 import PrenotazioneModal from "@/app/components/PrenotazioneModal";
 import PrenotazioniUtenteModal from "@/app/components/PrenotazioneUtenteModal";
+import StoricoPrenotazioniModal from "@/app/components/StoricoPrenotazioniModal";
 
 type Veicolo = {
     id: number;
@@ -50,6 +51,10 @@ export default function Dashboard() {
     const [editVeicolo, setEditVeicolo] = useState<Veicolo | null>(null);
     const [deleteVeicoloId, setDeleteVeicoloId] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    const [showStorico, setShowStorico] = useState(false);
+    const [storicoPrenotazioni, setStoricoPrenotazioni] = useState<any[]>([]);
+    const [isLoadingStorico, setIsLoadingStorico] = useState(false);
 
     useEffect(() => {
         const token = Cookies.get("authToken");
@@ -122,6 +127,40 @@ export default function Dashboard() {
             }
         } finally {
             setIsLoadingPrenotazioni(false);
+        }
+    };
+
+    const fetchStoricoPrenotazioni = async () => {
+        setIsLoadingStorico(true);
+        try {
+            const res = await fetch("/api/prenotazioni");
+            const data = await res.json();
+            if (data.success) {
+                const oggi = new Date();
+                oggi.setHours(0, 0, 0, 0);
+                const storico = (data.data || []).filter((p: any) => {
+                    const d = new Date(p.data_prenotazione);
+                    d.setHours(0, 0, 0, 0);
+                    return d < oggi;
+                }).sort((a: any, b: any) => {
+                    if (a.data_prenotazione === b.data_prenotazione) {
+                        return a.ora_inizio.localeCompare(b.ora_inizio);
+                    }
+                    return b.data_prenotazione.localeCompare(a.data_prenotazione);
+                });
+                setStoricoPrenotazioni(storico.map((p: any) => ({
+                    id: p.id,
+                    servizio_nome: p.servizio_nome,
+                    data_prenotazione: p.data_prenotazione,
+                    ora_inizio: p.ora_inizio,
+                    ora_fine: p.ora_fine,
+                    stato: p.stato,
+                    veicolo: `${p.marca} ${p.modello}`,
+                    targa: p.targa
+                })));
+            }
+        } finally {
+            setIsLoadingStorico(false);
         }
     };
 
@@ -352,14 +391,19 @@ export default function Dashboard() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                         </svg>
                     </button>
-                    <button className="text-gray-600 flex flex-col items-center justify-center">
+                    <button
+                        onClick={() => {
+                            fetchStoricoPrenotazioni();
+                            setShowStorico(true);
+                        }}
+                        className="text-gray-600 flex flex-col items-center justify-center"
+                    >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
                              stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round"
-                                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.01c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.01 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.01 2.573c.94 1.543-.827 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.01c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.572-1.01c-1.543.94-3.31-.827-2.37-2.37a1.724 1.724 0 00-1.01-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.01-2.572c-.94-1.543.827-3.31 2.37-2.37.996.608 2.29.07 2.572-1.01z"/>
-                            <circle cx="12" cy="12" r="3"/>
+                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        <span className="text-xs mt-1">Impostazioni</span>
+                        <span className="text-xs mt-1">Storico</span>
                     </button>
                     <button className="text-gray-600 flex flex-col items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
@@ -514,6 +558,12 @@ export default function Dashboard() {
                 prenotazioni={prenotazioni}
                 isOpen={showPrenotazioni}
                 onClose={() => setShowPrenotazioni(false)}
+            />
+            <StoricoPrenotazioniModal
+                prenotazioni={storicoPrenotazioni}
+                isOpen={showStorico}
+                onClose={() => setShowStorico(false)}
+                isLoading={isLoadingStorico}
             />
         </div>
     );
