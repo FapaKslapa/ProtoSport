@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useState} from 'react';
+import React, {useState} from "react";
 
 interface OrarioFormProps {
     orario?: {
@@ -10,69 +10,53 @@ interface OrarioFormProps {
         ora_fine: string;
     };
     giornoSettimana: number;
-    onSave: (orario: any) => Promise<void>;
+    onSave: (orario?: any) => Promise<void>;
     onCancel: () => void;
 }
 
-const OrarioForm: React.FC<OrarioFormProps> = ({orario, giornoSettimana, onSave, onCancel}) => {
+const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+
+const OrarioForm: React.FC<OrarioFormProps> = ({
+                                                   orario,
+                                                   giornoSettimana,
+                                                   onSave,
+                                                   onCancel,
+                                               }) => {
     const [formData, setFormData] = useState({
         giorno_settimana: giornoSettimana,
-        ora_inizio: orario?.ora_inizio || '09:00',
-        ora_fine: orario?.ora_fine || '18:00',
+        ora_inizio: orario?.ora_inizio || "09:00",
+        ora_fine: orario?.ora_fine || "18:00",
         is_closed: !orario,
     });
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const giorni = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const {name, value, type} = e.target as HTMLInputElement;
-        setFormData({
-            ...formData,
-            [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
-        });
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const {name, value, type, checked} = e.target;
+        setFormData(f => ({
+            ...f,
+            [name]: type === "checkbox" ? checked : value,
+        }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         setIsSubmitting(true);
-
-        if (formData.is_closed) {
-            // Se è chiuso, eliminiamo l'orario esistente
-            if (orario?.id) {
-                try {
-                    await fetch(`/api/disponibilita/${orario.id}`, {
-                        method: 'DELETE',
-                    });
-                    onCancel();
-                } catch (error) {
-                    setError('Errore durante la cancellazione dell\'orario');
-                }
-            } else {
-                onCancel();
-            }
-            setIsSubmitting(false);
-            return;
-        }
-
-        if (formData.ora_inizio >= formData.ora_fine) {
-            setError('L\'ora di inizio deve essere precedente all\'ora di fine');
-            setIsSubmitting(false);
-            return;
-        }
-
         try {
-            const {is_closed, ...dataToSave} = {
-                ...formData,
-                id: orario?.id,
-            };
-
+            if (formData.is_closed) {
+                await onSave();
+                return;
+            }
+            if (formData.ora_inizio >= formData.ora_fine) {
+                setError("L'ora di inizio deve essere precedente all'ora di fine");
+                setIsSubmitting(false);
+                return;
+            }
+            const {is_closed, ...dataToSave} = {...formData, id: orario?.id};
             await onSave(dataToSave);
-            onCancel();
-        } catch (error: any) {
-            setError(error.message || 'Si è verificato un errore');
+        } catch (err: any) {
+            setError(err?.message || err?.error || "Si è verificato un errore");
         } finally {
             setIsSubmitting(false);
         }
@@ -84,11 +68,8 @@ const OrarioForm: React.FC<OrarioFormProps> = ({orario, giornoSettimana, onSave,
                 <h3 className="text-2xl font-semibold text-black">{giorni[formData.giorno_settimana]}</h3>
                 <p className="text-black text-sm mt-1">Imposta gli orari di apertura e chiusura</p>
             </div>
-
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-8 border border-gray-100">
-                <label htmlFor="is_closed" className="text-black font-medium">
-                    Giorno di chiusura
-                </label>
+                <label htmlFor="is_closed" className="text-black font-medium">Giorno di chiusura</label>
                 <label className="relative inline-flex items-center cursor-pointer">
                     <input
                         type="checkbox"
@@ -102,7 +83,6 @@ const OrarioForm: React.FC<OrarioFormProps> = ({orario, giornoSettimana, onSave,
                         className="w-12 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                 </label>
             </div>
-
             {!formData.is_closed && (
                 <div className="space-y-8">
                     <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
@@ -119,7 +99,6 @@ const OrarioForm: React.FC<OrarioFormProps> = ({orario, giornoSettimana, onSave,
                             required
                         />
                     </div>
-
                     <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
                         <label htmlFor="ora_fine" className="block text-sm font-semibold text-black mb-3">
                             Orario di chiusura
@@ -136,20 +115,18 @@ const OrarioForm: React.FC<OrarioFormProps> = ({orario, giornoSettimana, onSave,
                     </div>
                 </div>
             )}
-
             {error && (
                 <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-lg text-sm mb-6">
                     {error}
                 </div>
             )}
-
             <div className="flex justify-end pt-6">
                 <button
                     type="submit"
                     disabled={isSubmitting}
                     className="inline-flex justify-center py-3 px-8 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
                 >
-                    {isSubmitting ? 'Salvataggio...' : 'Salva'}
+                    {isSubmitting ? "Salvataggio..." : "Salva"}
                 </button>
             </div>
         </form>

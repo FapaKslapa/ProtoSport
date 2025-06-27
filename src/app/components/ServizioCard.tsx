@@ -1,14 +1,16 @@
 import React from 'react';
 
+interface Servizio {
+    id: number;
+    nome: string;
+    descrizione: string;
+    durata_minuti: number;
+    prezzo: number;
+}
+
 interface ServizioCardProps {
-    servizio: {
-        id: number;
-        nome: string;
-        descrizione: string;
-        durata_minuti: number;
-        prezzo: number;
-    };
-    onEdit: (servizio: any) => void;
+    servizio: Servizio;
+    onEdit: (servizio: Servizio) => void;
     onDelete: (id: number) => void;
 }
 
@@ -17,11 +19,11 @@ const ServizioCard: React.FC<ServizioCardProps> = ({servizio, onEdit, onDelete})
 
     return (
         <div
-            className="bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <div className="p-6">
+            className="bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col">
+            <div className="p-6 flex flex-col flex-grow">
                 <h4 className="font-semibold text-lg mb-2 text-black">{nome}</h4>
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2 overflow-hidden">{descrizione}</p>
-                <div className="flex justify-between items-center">
+                <p className="text-gray-600 text-sm mb-3 line-clamp-2 overflow-hidden flex-grow">{descrizione}</p>
+                <div className="flex justify-between items-center mt-2">
                     <div className="flex-grow mr-4">
                         <span className="text-gray-800 font-medium whitespace-nowrap">{prezzo.toFixed(2)} €</span>
                         <span className="text-gray-500 text-sm ml-2 whitespace-nowrap">({durata_minuti} min)</span>
@@ -30,6 +32,8 @@ const ServizioCard: React.FC<ServizioCardProps> = ({servizio, onEdit, onDelete})
                         <button
                             onClick={() => onEdit(servizio)}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                            aria-label="Modifica servizio"
+                            type="button"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24"
                                  stroke="currentColor">
@@ -40,6 +44,8 @@ const ServizioCard: React.FC<ServizioCardProps> = ({servizio, onEdit, onDelete})
                         <button
                             onClick={() => onDelete(id)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                            aria-label="Elimina servizio"
+                            type="button"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24"
                                  stroke="currentColor">

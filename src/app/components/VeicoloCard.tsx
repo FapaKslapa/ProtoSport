@@ -1,16 +1,18 @@
 import React from 'react';
 import Image from 'next/image';
 
+interface Veicolo {
+    id: number;
+    marca: string;
+    modello: string;
+    anno?: number;
+    targa: string;
+    tipo: string;
+    cilindrata?: number;
+}
+
 interface VeicoloCardProps {
-    veicolo: {
-        id: number;
-        marca: string;
-        modello: string;
-        anno?: number;
-        targa: string;
-        tipo: string;
-        cilindrata?: number;
-    };
+    veicolo: Veicolo;
 }
 
 const VeicoloCard: React.FC<VeicoloCardProps> = ({veicolo}) => {
@@ -25,14 +27,13 @@ const VeicoloCard: React.FC<VeicoloCardProps> = ({veicolo}) => {
                     alt={`${marca} ${modello}`}
                     fill
                     style={{objectFit: 'contain'}}
-                    className=""
                     priority
                 />
             </div>
             <div className="p-5 text-center">
                 <h3 className="font-bold text-lg text-black">{marca} {modello}</h3>
                 <div className="mt-2 text-gray-600 text-sm">
-                    <span>{anno || 'N/D'} - {targa}</span>
+                    <span>{anno ?? 'N/D'} - {targa}</span>
                 </div>
             </div>
         </div>

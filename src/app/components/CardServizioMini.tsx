@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface CardServizioMiniProps {
     servizio: {
@@ -12,16 +12,18 @@ interface CardServizioMiniProps {
     onClick?: () => void;
 }
 
-const CardServizioMini: React.FC<CardServizioMiniProps> = ({servizio, selected, onClick}) => (
+const CardServizioMini: React.FC<CardServizioMiniProps> = ({
+                                                               servizio,
+                                                               selected,
+                                                               onClick,
+                                                           }) => (
     <button
         type="button"
         onClick={onClick}
-        className={`
-            flex flex-col items-start w-full min-w-[140px] max-w-[180px] p-3 rounded-xl border-2 mb-2 transition-all duration-200
-            ${selected ? 'border-red-500 bg-red-50 shadow-md scale-105' : 'border-gray-200 hover:border-red-300 bg-white'}
-            text-left
-        `}
-        style={{position: 'relative'}}
+        className={`flex flex-col items-start w-full min-w-[140px] max-w-[180px] p-3 rounded-xl border-2 mb-2 transition-all duration-200
+                      ${selected ? "border-red-500 bg-red-50 shadow-md scale-105" : "border-gray-200 hover:border-red-300 bg-white"}
+                      text-left`}
+        style={{position: "relative"}}
     >
         <div className="flex-1 min-w-0 w-full">
             <div className="text-base font-semibold text-gray-800 break-words whitespace-normal leading-tight">
@@ -37,10 +39,10 @@ const CardServizioMini: React.FC<CardServizioMiniProps> = ({servizio, selected, 
         </div>
         {selected && (
             <span className="absolute top-2 right-2 text-red-500">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
-                </svg>
-            </span>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                      </span>
         )}
     </button>
 );

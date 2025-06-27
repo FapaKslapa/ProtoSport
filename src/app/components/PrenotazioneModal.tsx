@@ -1,8 +1,8 @@
-import React, {useState, useEffect} from 'react';
-import VeicoloCardMini from './VeicoloCardMini';
-import CardServizioMini from './CardServizioMini';
-import CalendarElegant from './CalendarElegant';
-import FasceOrarie from './FasceOrarie';
+import React, {useState, useEffect} from "react";
+import VeicoloCardMini from "./VeicoloCardMini";
+import CardServizioMini from "./CardServizioMini";
+import CalendarElegant from "./CalendarElegant";
+import FasceOrarie from "./FasceOrarie";
 
 type Veicolo = {
     id: number;
@@ -26,7 +26,7 @@ type Fascia = {
 };
 
 function formatDate(date: Date) {
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split("T")[0];
 }
 
 interface PrenotazioneModalProps {
@@ -44,7 +44,7 @@ const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
                                                                  servizioPreselezionato,
                                                                  onSave,
                                                                  onCancel,
-                                                                 isLoading
+                                                                 isLoading,
                                                              }) => {
     const today = new Date();
     const [currentMonth, setCurrentMonth] = useState(today.getMonth());
@@ -53,10 +53,10 @@ const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
     const [servizioId, setServizioId] = useState(servizioPreselezionato || null);
     const [veicoloId, setVeicoloId] = useState<number | null>(null);
     const [fasce, setFasce] = useState<Fascia[]>([]);
-    const [oraInizio, setOraInizio] = useState('');
+    const [oraInizio, setOraInizio] = useState("");
     const [isLoadingFasce, setIsLoadingFasce] = useState(false);
-    const [oraFiltro, setOraFiltro] = useState<string>('');
-    const [note, setNote] = useState('');
+    const [oraFiltro, setOraFiltro] = useState("");
+    const [note, setNote] = useState("");
 
     useEffect(() => {
         if (selectedDate && servizioId) {
@@ -67,31 +67,30 @@ const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
                 .finally(() => setIsLoadingFasce(false));
         } else {
             setFasce([]);
-            setOraInizio('');
+            setOraInizio("");
         }
     }, [selectedDate, servizioId]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!veicoloId || !servizioId || !selectedDate || !oraInizio) return;
-        const fascia = fasce.find((f) => f.ora_inizio === oraInizio);
+        const fascia = fasce.find(f => f.ora_inizio === oraInizio);
         onSave({
             veicolo_id: veicoloId,
             servizio_id: servizioId,
             data_prenotazione: selectedDate,
             ora_inizio: oraInizio,
             ora_fine: fascia?.ora_fine,
-            note
+            note,
         });
     };
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Servizio */}
             <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Servizio</label>
                 <div className="flex gap-2 overflow-x-auto pb-2 pt-2 px-4">
-                    {servizi.map((s) => (
+                    {servizi.map(s => (
                         <CardServizioMini
                             key={s.id}
                             servizio={s}
@@ -101,11 +100,10 @@ const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
                     ))}
                 </div>
             </div>
-            {/* Veicolo */}
             <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Veicolo</label>
                 <div className="flex gap-2 overflow-x-auto pb-2 pt-2 px-4">
-                    {veicoli.map((v) => (
+                    {veicoli.map(v => (
                         <VeicoloCardMini
                             key={v.id}
                             veicolo={v}
@@ -115,7 +113,6 @@ const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
                     ))}
                 </div>
             </div>
-            {/* Calendario */}
             <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Data</label>
                 <CalendarElegant
@@ -123,26 +120,19 @@ const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
                     month={currentMonth}
                     selectedDate={selectedDate}
                     onSelect={setSelectedDate}
-                    onPrev={() => {
-                        if (currentMonth === 0) {
-                            setCurrentMonth(11);
-                            setCurrentYear(currentYear - 1);
-                        } else {
-                            setCurrentMonth(currentMonth - 1);
-                        }
-                    }}
-                    onNext={() => {
-                        if (currentMonth === 11) {
-                            setCurrentMonth(0);
-                            setCurrentYear(currentYear + 1);
-                        } else {
-                            setCurrentMonth(currentMonth + 1);
-                        }
-                    }}
+                    onPrev={() =>
+                        currentMonth === 0
+                            ? (setCurrentMonth(11), setCurrentYear(currentYear - 1))
+                            : setCurrentMonth(currentMonth - 1)
+                    }
+                    onNext={() =>
+                        currentMonth === 11
+                            ? (setCurrentMonth(0), setCurrentYear(currentYear + 1))
+                            : setCurrentMonth(currentMonth + 1)
+                    }
                     minDate={today}
                 />
             </div>
-            {/* Fasce orarie */}
             <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Fascia oraria</label>
                 <FasceOrarie
@@ -154,7 +144,6 @@ const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
                     setOraFiltro={setOraFiltro}
                 />
             </div>
-            {/* Note */}
             <div>
                 <label className="block text-sm font-semibold text-gray-700">Note (opzionale)</label>
                 <textarea

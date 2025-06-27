@@ -1,38 +1,38 @@
-import React from 'react';
+import React from "react";
+
+interface Admin {
+    id: number;
+    nome: string;
+    cognome: string;
+    telefono: string;
+}
 
 interface AdminCardProps {
-    admin: {
-        id: number;
-        nome: string;
-        cognome: string;
-        telefono: string;
-    };
+    admin: Admin;
     onDelete: (id: number) => void;
-    onEdit: (admin: { id: number; nome: string; cognome: string; telefono: string }) => void;
+    onEdit: (admin: Admin) => void;
 }
 
 const AdminCard: React.FC<AdminCardProps> = ({admin, onDelete, onEdit}) => {
     const {id, nome, cognome, telefono} = admin;
-
-    const iniziali = (nome.charAt(0) + cognome.charAt(0)).toUpperCase();
-
-    const getColorClass = () => {
+    const iniziali = (nome[0] + cognome[0]).toUpperCase();
+    const colorClass = (() => {
         const colors = [
-            'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
-            'bg-purple-500', 'bg-pink-500', 'bg-indigo-500',
-            'bg-red-500', 'bg-orange-500', 'bg-teal-500'
+            "bg-blue-500", "bg-green-500", "bg-yellow-500",
+            "bg-purple-500", "bg-pink-500", "bg-indigo-500",
+            "bg-red-500", "bg-orange-500", "bg-teal-500"
         ];
-        const hash = (nome + cognome).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const hash = (nome + cognome).split("").reduce((a, c) => a + c.charCodeAt(0), 0);
         return colors[hash % colors.length];
-    };
-
+    })();
+       
     return (
         <div
             className="bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.12),_0_4px_8px_rgba(0,0,0,0.06)] border border-gray-200 hover:shadow-[0_16px_45px_rgba(0,0,0,0.15),_0_8px_12px_rgba(0,0,0,0.1)] transition-shadow duration-300 min-w-[280px] w-[280px] flex-shrink-0 mr-4">
             <div className="p-5">
                 <div className="flex items-center mb-4">
                     <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl ${getColorClass()}`}>
+                        className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl ${colorClass}`}>
                         {iniziali}
                     </div>
                     <div className="ml-4">
@@ -40,7 +40,6 @@ const AdminCard: React.FC<AdminCardProps> = ({admin, onDelete, onEdit}) => {
                         <p className="text-black text-sm">{telefono}</p>
                     </div>
                 </div>
-
                 <div className="flex justify-end mt-2 relative z-30">
                     <button
                         onClick={() => onEdit(admin)}

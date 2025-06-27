@@ -4,7 +4,7 @@ import {verifyToken} from '@/lib/auth';
 import ical from 'ical-generator';
 import jwt from 'jsonwebtoken';
 
-const SECRET = process.env.GOOGLE_CALENDAR_SECRET || "sviluppo_super_segreto";
+const SECRET = process.env.GOOGLE_CALENDAR_SECRET || 'sviluppo_super_segreto';
 
 interface User {
     is_admin: boolean;
@@ -14,16 +14,13 @@ export async function GET(request: NextRequest) {
     try {
         const {searchParams} = new URL(request.url);
         const googleToken = searchParams.get('token');
-
         let userId: string | null = null;
+
         if (googleToken) {
             try {
                 const payload = jwt.verify(googleToken, SECRET) as any;
-                if (payload.type === 'google-calendar') {
-                    userId = String(payload.userId);
-                }
+                if (payload.type === 'google-calendar') userId = String(payload.userId);
             } catch {
-                console.log('Token non valido o scaduto');
                 return NextResponse.json({success: false, error: 'Token non valido'}, {status: 401});
             }
         } else {
@@ -31,16 +28,11 @@ export async function GET(request: NextRequest) {
             userId = verified ? String(verified) : null;
         }
 
-        if (!userId) {
-            return NextResponse.json({success: false, error: 'Non autorizzato'}, {status: 401});
-        }
+        if (!userId) return NextResponse.json({success: false, error: 'Non autorizzato'}, {status: 401});
 
         const db = getDb();
         const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(userId) as User;
-
-        if (!user?.is_admin) {
-            return NextResponse.json({success: false, error: 'Solo admin'}, {status: 403});
-        }
+        if (!user?.is_admin) return NextResponse.json({success: false, error: 'Solo admin'}, {status: 403});
 
         const prenotazioni = db.prepare(`
             SELECT p.id,
@@ -81,8 +73,7 @@ export async function GET(request: NextRequest) {
                 'Content-Disposition': 'attachment; filename="prenotazioni-admin.ics"',
             },
         });
-    } catch (error) {
-        console.error('Errore generazione calendario:', error);
+    } catch {
         return NextResponse.json({success: false, error: 'Errore generazione calendario'}, {status: 500});
     }
 }

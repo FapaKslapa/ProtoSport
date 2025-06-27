@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface Fascia {
     ora_inizio: string;
@@ -15,15 +15,19 @@ interface FasceOrarieProps {
 }
 
 const FasceOrarie: React.FC<FasceOrarieProps> = ({
-                                                     fasce, selected, onSelect, isLoading, oraFiltro, setOraFiltro
+                                                     fasce,
+                                                     selected,
+                                                     onSelect,
+                                                     isLoading,
+                                                     oraFiltro,
+                                                     setOraFiltro,
                                                  }) => {
-    // Filtra solo slot ogni 30 minuti e per ora selezionata
-    const fasceFiltrate = fasce.filter(f => {
-        const minuti = parseInt(f.ora_inizio.split(':')[1], 10);
-        return minuti % 30 === 0 && (oraFiltro ? f.ora_inizio.startsWith(oraFiltro) : true);
-    });
-
-    const oreDisponibili = Array.from(new Set(fasce.map(f => f.ora_inizio.split(':')[0])));
+    const fasceFiltrate = fasce.filter(
+        f =>
+            parseInt(f.ora_inizio.split(":")[1], 10) % 30 === 0 &&
+            (oraFiltro ? f.ora_inizio.startsWith(oraFiltro) : true)
+    );
+    const oreDisponibili = Array.from(new Set(fasce.map(f => f.ora_inizio.split(":")[0])));
 
     return (
         <div>
@@ -36,7 +40,9 @@ const FasceOrarie: React.FC<FasceOrarieProps> = ({
                 >
                     <option value="">Tutte le ore</option>
                     {oreDisponibili.map(ora => (
-                        <option key={ora} value={ora}>{ora}:00</option>
+                        <option key={ora} value={ora}>
+                            {ora}:00
+                        </option>
                     ))}
                 </select>
             </div>
@@ -47,27 +53,28 @@ const FasceOrarie: React.FC<FasceOrarieProps> = ({
                 </div>
             ) : (
                 <div className="flex flex-wrap gap-3 items-center">
-                    {fasceFiltrate.map((f) => (
+                    {fasceFiltrate.map(f => (
                         <button
                             key={f.ora_inizio}
                             type="button"
-                            className={`
-                                relative px-5 py-2 rounded-2xl border-2 text-base font-medium transition-all duration-150
-                                shadow-sm
-                                ${selected === f.ora_inizio
-                                ? 'bg-red-500 text-white border-red-500 scale-105 ring-2 ring-red-300'
-                                : 'bg-white text-gray-800 border-gray-200 hover:border-red-400 hover:bg-red-50'}
-                                focus:outline-none focus:ring-2 focus:ring-red-400
-                            `}
+                            className={`relative px-5 py-2 rounded-2xl border-2 text-base font-medium transition-all duration-150 shadow-sm
+                    ${selected === f.ora_inizio
+                                ? "bg-red-500 text-white border-red-500 scale-105 ring-2 ring-red-300"
+                                : "bg-white text-gray-800 border-gray-200 hover:border-red-400 hover:bg-red-50"}
+                    focus:outline-none focus:ring-2 focus:ring-red-400`}
                             onClick={() => onSelect(f.ora_inizio)}
                         >
-                            <span>{f.ora_inizio} <span className="mx-1 text-gray-400">-</span> {f.ora_fine}</span>
+                  <span>
+                    {f.ora_inizio} <span className="mx-1 text-gray-400">-</span> {f.ora_fine}
+                  </span>
                         </button>
                     ))}
                 </div>
             )}
-            {(!isLoading && fasceFiltrate.length === 0) && (
-                <div className="text-red-500 text-sm mt-4 text-center">Nessuna fascia disponibile per questa data</div>
+            {!isLoading && fasceFiltrate.length === 0 && (
+                <div className="text-red-500 text-sm mt-4 text-center">
+                    Nessuna fascia disponibile per questa data
+                </div>
             )}
         </div>
     );

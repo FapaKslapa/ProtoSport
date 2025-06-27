@@ -1,135 +1,137 @@
 "use client";
 
-import {useState, useEffect} from 'react';
-import {useRouter} from 'next/navigation';
-import {FaGoogle, FaMicrosoft, FaApple, FaRegCopy} from 'react-icons/fa';
-import Image from 'next/image';
-import Cookies from 'js-cookie';
-import OrarioCard from '@/app/components/OrarioCard';
-import OrarioForm from '@/app/components/OrarioForm';
-import ServizioCard from '@/app/components/ServizioCard';
-import ServizioForm from '@/app/components/ServizioForm';
-import PrenotazioniAdminModal from '@/app/components/PrenotazioniAdminModal';
+import {useState, useEffect, useCallback} from "react";
+import {useRouter} from "next/navigation";
+import {FaGoogle, FaMicrosoft, FaApple, FaRegCopy} from "react-icons/fa";
+import Image from "next/image";
+import Cookies from "js-cookie";
+import OrarioCard from "@/app/components/OrarioCard";
+import OrarioForm from "@/app/components/OrarioForm";
+import ServizioCard from "@/app/components/ServizioCard";
+import ServizioForm from "@/app/components/ServizioForm";
+import PrenotazioniAdminModal from "@/app/components/PrenotazioniAdminModal";
 
 export default function AdminDashboard() {
     const router = useRouter();
+
     const [isLoading, setIsLoading] = useState(true);
     const [userData, setUserData] = useState<any>(null);
     const [servizi, setServizi] = useState<any[]>([]);
     const [orari, setOrari] = useState<any[]>([]);
-    const [currentGiornoSettimana, setCurrentGiornoSettimana] = useState<number | null>(null);
-    const [isLoadingServizi, setIsLoadingServizi] = useState(true);
-    const [showOrariModal, setShowOrariModal] = useState(false);
-    const [showServiziModal, setShowServiziModal] = useState(false);
-    const [showPrenotazioniModal, setShowPrenotazioniModal] = useState(false);
-    const [showNuovoServizioModal, setShowNuovoServizioModal] = useState(false);
-    const [showModificaServizioModal, setShowModificaServizioModal] = useState(false);
-    const [showModificaOrarioModal, setShowModificaOrarioModal] = useState(false);
-    const [currentServizio, setCurrentServizio] = useState<any>(null);
-    const [icsLinksVisible, setIcsLinksVisible] = useState(false);
+    const [prenotazioniAdmin, setPrenotazioniAdmin] = useState<any[]>([]);
     const [calendarToken, setCalendarToken] = useState<string | null>(null);
-    const [nuovoServizio, setNuovoServizio] = useState({
-        nome: '',
-        descrizione: '',
-        durata_minuti: 60,
-        prezzo: 0
+        
+    const [modal, setModal] = useState({
+        servizi: false,
+        nuovoServizio: false,
+        modificaServizio: false,
+        modificaOrario: false,
+        prenotazioni: false,
+        icsLinks: false,
     });
 
-    // Prenotazioni admin
-    const [prenotazioniAdmin, setPrenotazioniAdmin] = useState<any[]>([]);
+    const [isLoadingServizi, setIsLoadingServizi] = useState(true);
     const [isLoadingPrenotazioniAdmin, setIsLoadingPrenotazioniAdmin] = useState(false);
 
+    const [currentServizio, setCurrentServizio] = useState<any>(null);
+    const [currentGiornoSettimana, setCurrentGiornoSettimana] = useState<number | null>(null);
+
     const handleLogout = () => {
-        Cookies.remove('authToken');
-        Cookies.remove('userData');
-        router.push('/');
+        Cookies.remove("authToken");
+        Cookies.remove("userData");
+        router.push("/");
     };
 
-    // --- INIZIO MODIFICHE CALENDARIO ---
-    const fetchCalendarToken = async () => {
+    const fetchCalendarToken = useCallback(async () => {
         try {
-            const res = await fetch('/api/admin/calendar-token');
+            const res = await fetch("/api/admin/calendar-token");
             const data = await res.json();
-            if (data.success) {
-                setCalendarToken(data.token);
-            }
-        } catch (e) {
+            if (data.success) setCalendarToken(data.token);
+        } catch {
             setCalendarToken(null);
         }
-    };
+    }, []);
+
+    const fetchServizi = useCallback(async () => {
+        setIsLoadingServizi(true);
+        try {
+            const response = await fetch("/api/servizi");
+            const data = await response.json();
+            if (data.success) setServizi(data.data);
+        } finally {
+            setIsLoadingServizi(false);
+        }
+    }, []);
+
+    const fetchOrari = useCallback(async () => {
+        try {
+            const response = await fetch("/api/disponibilita");
+            const data = await response.json();
+            if (data.success) setOrari(data.data);
+        } catch {
+        }
+    }, []);
+
+    const fetchPrenotazioniAdmin = useCallback(async () => {
+        setIsLoadingPrenotazioniAdmin(true);
+        try {
+            const res = await fetch("/api/prenotazioni");
+            const data = await res.json();
+            if (data.success) {
+                setPrenotazioniAdmin(
+                    (data.data || []).map((p: any) => ({
+                        id: p.id,
+                        user_nome: p.user_nome,
+                        user_cognome: p.user_cognome,
+                        servizio_nome: p.servizio_nome,
+                        data_prenotazione: p.data_prenotazione,
+                        ora_inizio: p.ora_inizio,
+                        ora_fine: p.ora_fine,
+                        stato: p.stato,
+                        veicolo: `${p.marca} ${p.modello}`,
+                        targa: p.targa,
+                    }))
+                );
+            }
+        } finally {
+            setIsLoadingPrenotazioniAdmin(false);
+        }
+    }, []);
 
     useEffect(() => {
-        const token = Cookies.get('authToken');
+        const token = Cookies.get("authToken");
         if (!token) {
-            router.push('/login');
+            router.push("/login");
             return;
         }
-        const userDataCookie = Cookies.get('userData');
+        const userDataCookie = Cookies.get("userData");
         if (userDataCookie) {
             try {
-                const parsedUserData = JSON.parse(userDataCookie);
-                setUserData(parsedUserData);
-            } catch (error) {
-                console.error('Errore nel parsing dei dati utente:', error);
+                setUserData(JSON.parse(userDataCookie));
+            } catch {
             }
         }
         fetchServizi();
         fetchOrari();
         fetchCalendarToken();
         setIsLoading(false);
-    }, [router]);
-    // --- FINE MODIFICHE CALENDARIO ---
-
-    const fetchServizi = async () => {
-        setIsLoadingServizi(true);
-        try {
-            const response = await fetch('/api/servizi');
-            const data = await response.json();
-            if (data.success) {
-                setServizi(data.data);
-            } else {
-                console.error('Errore nel caricamento dei servizi:', data.error);
-            }
-        } catch (error) {
-            console.error('Errore nella richiesta dei servizi:', error);
-        } finally {
-            setIsLoadingServizi(false);
-        }
-    };
-
-    const fetchOrari = async () => {
-        try {
-            const response = await fetch('/api/disponibilita');
-            const data = await response.json();
-            if (data.success) {
-                setOrari(data.data);
-            } else {
-                console.error('Errore nel caricamento degli orari:', data.error);
-            }
-        } catch (error) {
-            console.error('Errore nella richiesta degli orari:', error);
-        }
-    };
+    }, [router, fetchServizi, fetchOrari, fetchCalendarToken]);
 
     const handleSaveServizio = async (servizio: any) => {
         try {
-            const response = await fetch('/api/servizi', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+            const response = await fetch("/api/servizi", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(servizio),
             });
             const data = await response.json();
             if (data.success) {
-                setShowNuovoServizioModal(false);
+                setModal((m) => ({...m, nuovoServizio: false}));
                 fetchServizi();
                 return Promise.resolve();
-            } else {
-                return Promise.reject(new Error(data.error));
             }
+            return Promise.reject(new Error(data.error));
         } catch (error) {
-            console.error('Errore nella richiesta:', error);
             return Promise.reject(error);
         }
     };
@@ -137,129 +139,89 @@ export default function AdminDashboard() {
     const handleUpdateServizio = async (servizio: any) => {
         try {
             const response = await fetch(`/api/servizi/${servizio.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                method: "PUT",
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(servizio),
             });
             const data = await response.json();
             if (data.success) {
-                setShowModificaServizioModal(false);
+                setModal((m) => ({...m, modificaServizio: false}));
                 fetchServizi();
                 return Promise.resolve();
-            } else {
-                return Promise.reject(new Error(data.error));
             }
+            return Promise.reject(new Error(data.error));
         } catch (error) {
-            console.error('Errore nella richiesta:', error);
             return Promise.reject(error);
         }
     };
 
     const handleDeleteServizio = async (id: number) => {
-        if (!confirm('Sei sicuro di voler eliminare questo servizio?')) return;
+        if (!confirm("Sei sicuro di voler eliminare questo servizio?")) return;
         try {
-            const response = await fetch(`/api/servizi/${id}`, {
-                method: 'DELETE',
-            });
+            const response = await fetch(`/api/servizi/${id}`, {method: "DELETE"});
             const data = await response.json();
-            if (data.success) {
-                fetchServizi();
-            } else {
-                alert('Errore nell\'eliminazione del servizio: ' + data.error);
-            }
-        } catch (error) {
-            console.error('Errore nella richiesta:', error);
-            alert('Errore di connessione');
+            if (data.success) fetchServizi();
+            else alert("Errore nell'eliminazione del servizio: " + data.error);
+        } catch {
+            alert("Errore di connessione");
         }
     };
 
-    const handleSaveOrario = async (orario: any) => {
+    const handleSaveOrario = async (orario?: any) => {
         try {
-            if (orario.id) {
+            if (!orario) {
+                const id = orari.find((o) => o.giorno_settimana === currentGiornoSettimana)?.id;
+                if (id) {
+                    const response = await fetch(`/api/disponibilita/${id}`, {
+                        method: "DELETE",
+                        headers: {"Content-Type": "application/json"},
+                    });
+                    const data = await response.json();
+                    if (!data.success) return Promise.reject(new Error(data.error));
+                }
+            } else if (orario.id) {
                 const response = await fetch(`/api/disponibilita/${orario.id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    method: "PUT",
+                    headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
                         giorno_settimana: orario.giorno_settimana,
                         ora_inizio: orario.ora_inizio,
-                        ora_fine: orario.ora_fine
+                        ora_fine: orario.ora_fine,
                     }),
                 });
                 const data = await response.json();
-                if (data.success) {
-                    setShowModificaOrarioModal(false);
-                    fetchOrari();
-                    return Promise.resolve();
-                } else {
-                    return Promise.reject(new Error(data.error));
-                }
+                if (!data.success) return Promise.reject(new Error(data.error));
             } else {
-                const response = await fetch('/api/disponibilita', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                const response = await fetch("/api/disponibilita", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
                         giorno_settimana: orario.giorno_settimana,
                         ora_inizio: orario.ora_inizio,
-                        ora_fine: orario.ora_fine
+                        ora_fine: orario.ora_fine,
                     }),
                 });
                 const data = await response.json();
-                if (data.success) {
-                    setShowModificaOrarioModal(false);
-                    fetchOrari();
-                    return Promise.resolve();
-                } else {
-                    return Promise.reject(new Error(data.error));
-                }
+                if (!data.success) return Promise.reject(new Error(data.error));
             }
+            await fetchOrari();
+            setModal((m) => ({...m, modificaOrario: false}));
+            setCurrentGiornoSettimana(null);
+            return Promise.resolve();
         } catch (error) {
-            console.error('Errore nella richiesta:', error);
             return Promise.reject(error);
         }
     };
 
-    // --- Prenotazioni admin ---
-    const fetchPrenotazioniAdmin = async () => {
-        setIsLoadingPrenotazioniAdmin(true);
-        try {
-            const res = await fetch('/api/prenotazioni');
-            const data = await res.json();
-            if (data.success) {
-                setPrenotazioniAdmin((data.data || []).map((p: any) => ({
-                    id: p.id,
-                    user_nome: p.user_nome,
-                    user_cognome: p.user_cognome,
-                    servizio_nome: p.servizio_nome,
-                    data_prenotazione: p.data_prenotazione,
-                    ora_inizio: p.ora_inizio,
-                    ora_fine: p.ora_fine,
-                    stato: p.stato,
-                    veicolo: `${p.marca} ${p.modello}`,
-                    targa: p.targa
-                })));
-            }
-        } finally {
-            setIsLoadingPrenotazioniAdmin(false);
-        }
-    };
-
-    // --- INIZIO MODIFICHE CALENDARIO ---
     const icsUrl = calendarToken
         ? `/api/admin/calendar?token=${calendarToken}`
-        : '/api/admin/calendar';
+        : "/api/admin/calendar";
 
     const handleCopyLink = () => {
         const url = window.location.origin + icsUrl;
         navigator.clipboard.writeText(url);
-        alert('Link calendario copiato!');
+        alert("Link calendario copiato!");
     };
-    // --- FINE MODIFICHE CALENDARIO ---
 
     if (isLoading) {
         return (
@@ -310,14 +272,14 @@ export default function AdminDashboard() {
                                 className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
                         </div>
                     ) : (
-                        <div className="flex overflow-x-auto pb-4 w-full max-w-full -mx-4 px-4">
-                            {servizi.map(servizio => (
-                                <div className="flex-shrink-0 w-64 mr-4" key={servizio.id}>
+                        <div className="flex overflow-x-auto pb-4 w-full max-w-full -mx-4 px-4 items-stretch">
+                            {servizi.map((servizio) => (
+                                <div className="flex-shrink-0 w-64 mr-4 h-full flex" key={servizio.id}>
                                     <ServizioCard
                                         servizio={servizio}
-                                        onEdit={(servizio) => {
-                                            setCurrentServizio(servizio);
-                                            setShowModificaServizioModal(true);
+                                        onEdit={(s) => {
+                                            setCurrentServizio(s);
+                                            setModal((m) => ({...m, modificaServizio: true}));
                                         }}
                                         onDelete={handleDeleteServizio}
                                     />
@@ -333,7 +295,7 @@ export default function AdminDashboard() {
                         orari={orari}
                         onEdit={(giorno) => {
                             setCurrentGiornoSettimana(giorno);
-                            setShowModificaOrarioModal(true);
+                            setModal((m) => ({...m, modificaOrario: true}));
                         }}
                     />
                 </div>
@@ -343,12 +305,11 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-around h-full max-w-md mx-auto">
                     <button
                         className="text-gray-600 flex flex-col items-center justify-center"
-                        onClick={() => setShowNuovoServizioModal(true)}
+                        onClick={() => setModal((m) => ({...m, nuovoServizio: true}))}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
                              stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                  d="M12 4v16m8-8H4"/>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                         </svg>
                         <span className="text-xs mt-1">Nuovo</span>
                     </button>
@@ -357,7 +318,7 @@ export default function AdminDashboard() {
                         className="text-gray-600 flex flex-col items-center justify-center"
                         onClick={() => {
                             fetchPrenotazioniAdmin();
-                            setShowPrenotazioniModal(true);
+                            setModal((m) => ({...m, prenotazioni: true}));
                         }}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
@@ -369,18 +330,21 @@ export default function AdminDashboard() {
                     </button>
                     <button
                         className="text-gray-600 flex flex-col items-center justify-center"
-                        onClick={() => setIcsLinksVisible(v => !v)}
+                        onClick={() => setModal((m) => ({...m, icsLinks: !m.icsLinks}))}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
                              stroke="currentColor">
+                            <rect x="3" y="4" width="18" height="16" rx="2" strokeWidth={2}/>
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                  d="M12 4v16m8-8H4"/>
+                                  d="M16 2v4M8 2v4M3 10h18"/>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                  d="M10.5 17a2.5 2.5 0 003.5 0l2-2a2.5 2.5 0 00-3.5-3.5l-.5.5"/>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                  d="M13.5 13a2.5 2.5 0 00-3.5 0l-2 2a2.5 2.5 0 003.5 3.5l.5-.5"/>
                         </svg>
-                        <span className="text-xs mt-1">Calendario</span>
+                        <span className="text-xs mt-1">Connetti</span>
                     </button>
-                    <button
-                        className="text-gray-600 flex flex-col items-center justify-center"
-                    >
+                    <button className="text-gray-600 flex flex-col items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
                              stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round"
@@ -389,10 +353,7 @@ export default function AdminDashboard() {
                         </svg>
                         <span className="text-xs mt-1">Impostazioni</span>
                     </button>
-
-                    <button
-                        className="text-gray-600 flex flex-col items-center justify-center"
-                    >
+                    <button className="text-gray-600 flex flex-col items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
                              stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round"
@@ -405,7 +366,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="absolute left-1/2 -translate-x-1/2 bottom-20 z-50">
-                    {icsLinksVisible && (
+                    {modal.icsLinks && (
                         <div
                             className="bg-white border border-gray-200 rounded-xl shadow-lg p-6 flex flex-col items-center space-y-4 min-w-[260px]">
                             <button
@@ -445,7 +406,7 @@ export default function AdminDashboard() {
                             </a>
                             <button
                                 className="mt-2 text-xs text-gray-500 hover:text-gray-700 transition"
-                                onClick={() => setIcsLinksVisible(false)}
+                                onClick={() => setModal((m) => ({...m, icsLinks: false}))}
                             >
                                 Chiudi
                             </button>
@@ -453,207 +414,199 @@ export default function AdminDashboard() {
                     )}
                 </div>
             </nav>
-            {
-                showServiziModal && (
-                    <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
-                        <div
-                            className="bg-white p-6 rounded-3xl w-full max-w-md min-h-[70vh] max-h-[90vh] overflow-y-auto pointer-events-auto"
-                            style={{
-                                transform: 'translateY(0)',
-                                transition: 'transform 0.3s ease-out',
-                                animation: 'slideUp 0.3s ease-out',
-                                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(0, 0, 0, 0.05)'
-                            }}
-                        >
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-black">Gestione Servizi</h3>
-                                <button onClick={() => setShowServiziModal(false)}
-                                        className="text-gray-500 hover:text-gray-700">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                                         viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                              d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
-                                </button>
-                            </div>
-                            <div className="text-black">
-                                <p className="mb-4">Gestisci tutti i servizi offerti dall'officina.</p>
-                                <button
-                                    onClick={() => {
-                                        setShowServiziModal(false);
-                                        setShowNuovoServizioModal(true);
-                                    }}
-                                    className="w-full py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 mb-4"
-                                >
-                                    Aggiungi Nuovo Servizio
-                                </button>
-                                <div className="space-y-3">
-                                    {servizi.map(servizio => (
-                                        <div key={servizio.id}
-                                             className="flex justify-between items-center p-3 bg-gray-100 rounded-lg">
-                                            <div>
-                                                <h4 className="font-semibold text-black">{servizio.nome}</h4>
-                                                <p className="text-sm text-gray-600">{servizio.prezzo.toFixed(2)} €
-                                                    - {servizio.durata_minuti} min</p>
-                                            </div>
-                                            <div className="flex space-x-2">
-                                                <button
-                                                    onClick={() => {
-                                                        setCurrentServizio(servizio);
-                                                        setShowServiziModal(false);
-                                                        setShowModificaServizioModal(true);
-                                                    }}
-                                                    className="text-blue-600 p-1 hover:bg-blue-100 rounded-full"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
-                                                         viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                    </svg>
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        handleDeleteServizio(servizio.id);
-                                                        setShowServiziModal(false);
-                                                    }}
-                                                    className="text-red-600 p-1 hover:bg-red-100 rounded-full"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
-                                                         viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                    </svg>
-                                                </button>
-                                            </div>
+
+            {modal.servizi && (
+                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
+                    <div
+                        className="bg-white p-6 rounded-3xl w-full max-w-md min-h-[70vh] max-h-[90vh] overflow-y-auto pointer-events-auto"
+                        style={{
+                            transform: "translateY(0)",
+                            transition: "transform 0.3s ease-out",
+                            animation: "slideUp 0.3s ease-out",
+                            boxShadow:
+                                "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(0, 0, 0, 0.05)",
+                        }}
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-black">Gestione Servizi</h3>
+                            <button
+                                onClick={() => setModal((m) => ({...m, servizi: false}))}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
+                                     viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                          d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="text-black">
+                            <p className="mb-4">Gestisci tutti i servizi offerti dall'officina.</p>
+                            <button
+                                onClick={() => setModal((m) => ({...m, servizi: false, nuovoServizio: true}))}
+                                className="w-full py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 mb-4"
+                            >
+                                Aggiungi Nuovo Servizio
+                            </button>
+                            <div className="space-y-3">
+                                {servizi.map((servizio) => (
+                                    <div key={servizio.id}
+                                         className="flex justify-between items-center p-3 bg-gray-100 rounded-lg">
+                                        <div>
+                                            <h4 className="font-semibold text-black">{servizio.nome}</h4>
+                                            <p className="text-sm text-gray-600">
+                                                {servizio.prezzo.toFixed(2)} € - {servizio.durata_minuti} min
+                                            </p>
                                         </div>
-                                    ))}
-                                </div>
+                                        <div className="flex space-x-2">
+                                            <button
+                                                onClick={() => {
+                                                    setCurrentServizio(servizio);
+                                                    setModal((m) => ({...m, servizi: false, modificaServizio: true}));
+                                                }}
+                                                className="text-blue-600 p-1 hover:bg-blue-100 rounded-full"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
+                                                     viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    handleDeleteServizio(servizio.id);
+                                                    setModal((m) => ({...m, servizi: false}));
+                                                }}
+                                                className="text-red-600 p-1 hover:bg-red-100 rounded-full"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
+                                                     viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
-                )
-            }
+                </div>
+            )}
 
-            {/* Modal prenotazioni admin */
-            }
             <PrenotazioniAdminModal
                 prenotazioni={prenotazioniAdmin}
-                isOpen={showPrenotazioniModal}
-                onClose={() => setShowPrenotazioniModal(false)}
+                isOpen={modal.prenotazioni}
+                onClose={() => setModal((m) => ({...m, prenotazioni: false}))}
             />
 
-            {/* Modal nuovo servizio */
-            }
-            {
-                showNuovoServizioModal && (
-                    <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
-                        <div
-                            className="bg-white p-6 rounded-3xl w-full max-w-md min-h-[70vh] max-h-[90vh] overflow-y-auto pointer-events-auto"
-                            style={{
-                                transform: 'translateY(0)',
-                                transition: 'transform 0.3s ease-out',
-                                animation: 'slideUp 0.3s ease-out',
-                                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(0, 0, 0, 0.05)'
-                            }}
-                        >
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-black">Nuovo Servizio</h3>
-                                <button onClick={() => setShowNuovoServizioModal(false)}
-                                        className="text-gray-500 hover:text-gray-700">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                                         viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                              d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
-                                </button>
-                            </div>
-                            <ServizioForm
-                                onSave={handleSaveServizio}
-                                onCancel={() => setShowNuovoServizioModal(false)}
-                            />
+            {modal.nuovoServizio && (
+                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
+                    <div
+                        className="bg-white p-6 rounded-3xl w-full max-w-md min-h-[70vh] max-h-[90vh] overflow-y-auto pointer-events-auto"
+                        style={{
+                            transform: "translateY(0)",
+                            transition: "transform 0.3s ease-out",
+                            animation: "slideUp 0.3s ease-out",
+                            boxShadow:
+                                "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(0, 0, 0, 0.05)",
+                        }}
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-black">Nuovo Servizio</h3>
+                            <button
+                                onClick={() => setModal((m) => ({...m, nuovoServizio: false}))}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
+                                     viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                          d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
                         </div>
+                        <ServizioForm
+                            onSave={handleSaveServizio}
+                            onCancel={() => setModal((m) => ({...m, nuovoServizio: false}))}
+                        />
                     </div>
-                )
-            }
+                </div>
+            )}
 
-            {/* Modal modifica servizio */
-            }
-            {
-                showModificaServizioModal && currentServizio && (
-                    <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
-                        <div
-                            className="bg-white p-6 rounded-3xl w-full max-w-md min-h-[70vh] max-h-[90vh] overflow-y-auto pointer-events-auto"
-                            style={{
-                                transform: 'translateY(0)',
-                                transition: 'transform 0.3s ease-out',
-                                animation: 'slideUp 0.3s ease-out',
-                                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(0, 0, 0, 0.05)'
-                            }}
-                        >
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-black">Modifica Servizio</h3>
-                                <button onClick={() => setShowModificaServizioModal(false)}
-                                        className="text-gray-500 hover:text-gray-700">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                                         viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                              d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
-                                </button>
-                            </div>
-                            <ServizioForm
-                                servizio={currentServizio}
-                                onSave={handleUpdateServizio}
-                                onCancel={() => setShowModificaServizioModal(false)}
-                            />
+            {modal.modificaServizio && currentServizio && (
+                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
+                    <div
+                        className="bg-white p-6 rounded-3xl w-full max-w-md min-h-[70vh] max-h-[90vh] overflow-y-auto pointer-events-auto"
+                        style={{
+                            transform: "translateY(0)",
+                            transition: "transform 0.3s ease-out",
+                            animation: "slideUp 0.3s ease-out",
+                            boxShadow:
+                                "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(0, 0, 0, 0.05)",
+                        }}
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-black">Modifica Servizio</h3>
+                            <button
+                                onClick={() => setModal((m) => ({...m, modificaServizio: false}))}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
+                                     viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                          d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
                         </div>
+                        <ServizioForm
+                            servizio={currentServizio}
+                            onSave={handleUpdateServizio}
+                            onCancel={() => setModal((m) => ({...m, modificaServizio: false}))}
+                        />
                     </div>
-                )
-            }
+                </div>
+            )}
 
-            {/* Modal per modifica orario */
-            }
-            {
-                showModificaOrarioModal && currentGiornoSettimana !== null && (
-                    <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
-                        <div
-                            className="bg-white p-6 rounded-3xl w-full max-w-md min-h-[70vh] max-h-[90vh] overflow-y-auto pointer-events-auto"
-                            style={{
-                                transform: 'translateY(0)',
-                                transition: 'transform 0.3s ease-out',
-                                animation: 'slideUp 0.3s ease-out',
-                                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(0, 0, 0, 0.05)'
-                            }}
-                        >
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-black">Modifica Orario</h3>
-                                <button
-                                    onClick={() => {
-                                        setShowModificaOrarioModal(false);
-                                        setCurrentGiornoSettimana(null);
-                                    }}
-                                    className="text-gray-500 hover:text-gray-700"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                                         viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                              d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
-                                </button>
-                            </div>
-                            <OrarioForm
-                                orario={orari.find(o => o.giorno_settimana === currentGiornoSettimana)}
-                                giornoSettimana={currentGiornoSettimana}
-                                onSave={handleSaveOrario}
-                                onCancel={() => {
-                                    setShowModificaOrarioModal(false);
+            {modal.modificaOrario && currentGiornoSettimana !== null && (
+                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
+                    <div
+                        className="bg-white p-6 rounded-3xl w-full max-w-md min-h-[70vh] max-h-[90vh] overflow-y-auto pointer-events-auto"
+                        style={{
+                            transform: "translateY(0)",
+                            transition: "transform 0.3s ease-out",
+                            animation: "slideUp 0.3s ease-out",
+                            boxShadow:
+                                "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(0, 0, 0, 0.05)",
+                        }}
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-black">Modifica Orario</h3>
+                            <button
+                                onClick={() => {
+                                    setModal((m) => ({...m, modificaOrario: false}));
                                     setCurrentGiornoSettimana(null);
                                 }}
-                            />
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
+                                     viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                          d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
                         </div>
+                        <OrarioForm
+                            orario={orari.find((o) => o.giorno_settimana === currentGiornoSettimana)}
+                            giornoSettimana={currentGiornoSettimana}
+                            onSave={handleSaveOrario}
+                            onCancel={() => {
+                                setModal((m) => ({...m, modificaOrario: false}));
+                                setCurrentGiornoSettimana(null);
+                            }}
+                        />
                     </div>
-                )
-            }
+                </div>
+            )}
         </div>
     );
 }

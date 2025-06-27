@@ -1,10 +1,9 @@
-import {useState, useEffect} from 'react';
-import DatePicker from 'react-datepicker';
+import {useState, useEffect} from "react";
+import DatePicker, {registerLocale} from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import {registerLocale} from "react-datepicker";
-import {it} from 'date-fns/locale/it';
+import {it} from "date-fns/locale/it";
 
-registerLocale('it', it);
+registerLocale("it", it);
 
 interface PrenotazioneFormProps {
     veicoli: any[];
@@ -19,109 +18,80 @@ export default function PrenotazioneForm({
                                              servizi,
                                              servizioPreselezionato,
                                              onSave,
-                                             onCancel
+                                             onCancel,
                                          }: PrenotazioneFormProps) {
     const [disponibilita, setDisponibilita] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [error, setError] = useState("");
     const [formData, setFormData] = useState({
-        veicolo_id: veicoli.length > 0 ? veicoli[0].id : '',
-        servizio_id: servizioPreselezionato || (servizi.length > 0 ? servizi[0].id : ''),
+        veicolo_id: veicoli[0]?.id || "",
+        servizio_id: servizioPreselezionato || servizi[0]?.id || "",
         data_prenotazione: new Date(),
-        ora_inizio: '',
-        ora_fine: '',
-        note: ''
+        ora_inizio: "",
+        ora_fine: "",
+        note: "",
     });
 
     useEffect(() => {
         const fetchDisponibilita = async () => {
             if (!formData.data_prenotazione) return;
-
             setIsLoading(true);
             try {
-                const formattedDate = formData.data_prenotazione.toISOString().split('T')[0];
-                const response = await fetch(`/api/disponibilita?data=${formattedDate}`);
-                const data = await response.json();
-
+                const dateStr = formData.data_prenotazione.toISOString().split("T")[0];
+                const res = await fetch(`/api/disponibilita?data=${dateStr}`);
+                const data = await res.json();
                 if (data.success) {
                     setDisponibilita(data.disponibilita || []);
-                    setError('');
+                    setError("");
                 } else {
-                    setError(data.error || 'Errore nel caricamento delle disponibilità');
+                    setError(data.error || "Errore nel caricamento delle disponibilità");
                     setDisponibilita([]);
                 }
-            } catch (error) {
-                setError('Errore di connessione');
+            } catch {
+                setError("Errore di connessione");
                 setDisponibilita([]);
             } finally {
                 setIsLoading(false);
             }
         };
-
         fetchDisponibilita();
     }, [formData.data_prenotazione]);
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLTextAreaElement>) => {
         const {name, value} = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(f => ({...f, [name]: value}));
     };
 
     const handleDateChange = (date: Date | null) => {
-        if (date) {
-            setFormData(prev => ({
-                ...prev,
-                data_prenotazione: date,
-                ora_inizio: '',
-                ora_fine: ''
-            }));
-        }
+        if (date) setFormData(f => ({...f, data_prenotazione: date, ora_inizio: "", ora_fine: ""}));
     };
 
     const handleFasciaOrariaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const slot = disponibilita.find(d => d.id === parseInt(e.target.value));
-        if (slot) {
-            setFormData(prev => ({
-                ...prev,
-                ora_inizio: slot.ora_inizio,
-                ora_fine: slot.ora_fine
-            }));
-        }
+        if (slot) setFormData(f => ({...f, ora_inizio: slot.ora_inizio, ora_fine: slot.ora_fine}));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-
         if (!formData.veicolo_id || !formData.servizio_id || !formData.data_prenotazione || !formData.ora_inizio || !formData.ora_fine) {
-            setError('Tutti i campi sono obbligatori');
+            setError("Tutti i campi sono obbligatori");
             return;
         }
-
-        const servizioSelezionato = servizi.find(s => s.id === parseInt(formData.servizio_id));
-        const veicoloSelezionato = veicoli.find(v => v.id === parseInt(formData.veicolo_id));
-
-        if (!servizioSelezionato || !veicoloSelezionato) {
-            setError('Seleziona un servizio e un veicolo validi');
+        const servizio = servizi.find(s => s.id === parseInt(formData.servizio_id));
+        const veicolo = veicoli.find(v => v.id === parseInt(formData.veicolo_id));
+        if (!servizio || !veicolo) {
+            setError("Seleziona un servizio e un veicolo validi");
             return;
         }
-
-        const formattedDate = formData.data_prenotazione.toISOString().split('T')[0];
-
         onSave({
             ...formData,
-            data_prenotazione: formattedDate
+            data_prenotazione: formData.data_prenotazione.toISOString().split("T")[0],
         });
     };
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-                <div className="p-3 rounded-md bg-red-100 text-red-800">
-                    {error}
-                </div>
-            )}
+            {error && <div className="p-3 rounded-md bg-red-100 text-red-800">{error}</div>}
 
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Veicolo</label>
@@ -133,9 +103,9 @@ export default function PrenotazioneForm({
                     required
                 >
                     <option value="">Seleziona un veicolo</option>
-                    {veicoli.map(veicolo => (
-                        <option key={veicolo.id} value={veicolo.id}>
-                            {veicolo.marca} {veicolo.modello} - {veicolo.targa}
+                    {veicoli.map(v => (
+                        <option key={v.id} value={v.id}>
+                            {v.marca} {v.modello} - {v.targa}
                         </option>
                     ))}
                 </select>
@@ -151,9 +121,9 @@ export default function PrenotazioneForm({
                     required
                 >
                     <option value="">Seleziona un servizio</option>
-                    {servizi.map(servizio => (
-                        <option key={servizio.id} value={servizio.id}>
-                            {servizio.nome} - €{servizio.prezzo.toFixed(2)}
+                    {servizi.map(s => (
+                        <option key={s.id} value={s.id}>
+                            {s.nome} - €{s.prezzo.toFixed(2)}
                         </option>
                     ))}
                 </select>
@@ -184,11 +154,15 @@ export default function PrenotazioneForm({
                         onChange={handleFasciaOrariaChange}
                         className="w-full p-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500"
                         required
-                        value={formData.ora_inizio ? disponibilita.findIndex(d => d.ora_inizio === formData.ora_inizio) : ''}
+                        value={
+                            formData.ora_inizio
+                                ? disponibilita.find(d => d.ora_inizio === formData.ora_inizio)?.id || ""
+                                : ""
+                        }
                     >
                         <option value="">Seleziona un orario</option>
-                        {disponibilita.map((slot, index) => (
-                            <option key={index} value={slot.id}>
+                        {disponibilita.map(slot => (
+                            <option key={slot.id} value={slot.id}>
                                 {slot.ora_inizio} - {slot.ora_fine}
                             </option>
                         ))}

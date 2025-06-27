@@ -2,7 +2,6 @@ import {NextRequest} from 'next/server';
 import {getDb} from './db';
 import jwt from 'jsonwebtoken';
 
-// Chiave segreta per i token JWT
 const JWT_SECRET = process.env.JWT_SECRET || 'chiave-segreta-temporanea';
 
 export function verifyToken(request: NextRequest): number | null {

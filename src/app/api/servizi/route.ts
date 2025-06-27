@@ -19,7 +19,6 @@ interface QueryResult {
     lastInsertRowid: number;
 }
 
-// GET - Ottieni tutti i servizi
 export async function GET() {
     try {
         const db = getDb();
@@ -34,7 +33,6 @@ export async function GET() {
     }
 }
 
-// POST - Crea un nuovo servizio
 export async function POST(request: NextRequest) {
     try {
         const userId = verifyToken(request);
@@ -47,7 +45,7 @@ export async function POST(request: NextRequest) {
 
         const db = getDb();
         const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(userId) as User;
-        if (!user || !user.is_admin) {
+        if (!user?.is_admin) {
             return NextResponse.json(
                 {success: false, error: 'Accesso negato: richiesti privilegi di amministratore'},
                 {status: 403}
@@ -65,7 +63,7 @@ export async function POST(request: NextRequest) {
 
         const result = db.prepare(
             'INSERT INTO servizi (nome, descrizione, durata_minuti, prezzo) VALUES (?, ?, ?, ?)'
-        ).run(nome, descrizione || null, durata_minuti, prezzo) as QueryResult;
+        ).run(nome, descrizione ?? null, durata_minuti, prezzo) as QueryResult;
 
         return NextResponse.json({
             success: true,

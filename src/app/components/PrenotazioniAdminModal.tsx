@@ -1,4 +1,4 @@
-import React, {useState, useMemo} from 'react';
+import React, {useState, useMemo, useEffect} from "react";
 
 type Prenotazione = {
     id: number;
@@ -18,42 +18,51 @@ interface Props {
     isOpen: boolean;
 }
 
-function formatDate(date: Date) {
-    return date.toISOString().split('T')[0];
-}
+const formatDate = (date: Date) => date.toISOString().split("T")[0];
+const formatDateLabel = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString("it-IT", {
+        weekday: "long",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    });
 
-function formatDateLabel(dateStr: string) {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('it-IT', {weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit'});
-}
-
-const PrenotazioniAdminModal: React.FC<Props> = ({prenotazioni, onClose, isOpen}) => {
+const PrenotazioniAdminModal: React.FC<Props> = ({
+                                                     prenotazioni,
+                                                     onClose,
+                                                     isOpen,
+                                                 }) => {
     const today = formatDate(new Date());
-    const [selectedDate, setSelectedDate] = useState<string>(today);
-
-    // Lista date future con prenotazioni
     const dateList = useMemo(() => {
-        const uniqueDates = Array.from(
-            new Set(
-                prenotazioni
-                    .map(p => p.data_prenotazione)
-                    .filter(d => d >= today)
-            )
+        const unique = Array.from(
+            new Set(prenotazioni.map(p => p.data_prenotazione))
         ).sort();
-        return uniqueDates.length > 0 ? uniqueDates : [today];
+        return unique.length ? unique : [today];
     }, [prenotazioni, today]);
 
-    // Aggiorna la data selezionata se cambia la lista delle date
-    React.useEffect(() => {
-        if (!dateList.includes(selectedDate)) {
-            setSelectedDate(dateList[0]);
+    const getClosestDate = () => {
+        if (dateList.includes(today)) return today;
+        let minDiff = Infinity, closest = dateList[0];
+        for (const d of dateList) {
+            const diff = Math.abs(new Date(d).getTime() - new Date(today).getTime());
+            if (diff < minDiff) {
+                minDiff = diff;
+                closest = d;
+            }
         }
-    }, [dateList, selectedDate]);
+        return closest;
+    };
+
+    const [selectedDate, setSelectedDate] = useState(getClosestDate());
+
+    useEffect(() => {
+        setSelectedDate(getClosestDate());
+        // eslint-disable-next-line
+    }, [dateList.join(","), today]);
 
     const prenotazioniDelGiorno = prenotazioni
         .filter(p => p.data_prenotazione === selectedDate)
         .sort((a, b) => a.ora_inizio.localeCompare(b.ora_inizio));
-
     const currentIndex = dateList.indexOf(selectedDate);
 
     if (!isOpen) return null;
@@ -63,37 +72,35 @@ const PrenotazioniAdminModal: React.FC<Props> = ({prenotazioni, onClose, isOpen}
             <div
                 className="bg-white p-8 rounded-t-3xl w-full max-w-3xl max-h-[92vh] overflow-y-auto pointer-events-auto z-10 shadow-2xl bottom-0 border border-gray-200"
                 style={{
-                    transition: 'box-shadow 0.3s',
-                    animation: 'slideUp 0.3s',
-                    boxShadow: '0 -10px 30px -5px rgba(0,0,0,0.12), 0 8px 40px 0 rgba(0,0,0,0.18)'
+                    transition: "box-shadow 0.3s",
+                    animation: "slideUp 0.3s",
+                    boxShadow:
+                        "0 -10px 30px -5px rgba(0,0,0,0.12), 0 8px 40px 0 rgba(0,0,0,0.18)",
                 }}
             >
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-extrabold text-black tracking-tight">Prenotazioni di tutti gli
-                        utenti</h2>
+                    <h2 className="text-2xl font-extrabold text-black tracking-tight">
+                        Prenotazioni di tutti gli utenti
+                    </h2>
                     <button
                         onClick={onClose}
                         className="text-gray-400 hover:text-red-500 transition-colors"
                         aria-label="Chiudi"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none"
-                             viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                   d="M6 18L18 6M6 6l12 12"/>
                         </svg>
                     </button>
                 </div>
-
-                {/* Navigazione tra le date */}
                 <div className="flex items-center justify-center mb-6 gap-3">
                     <button
                         onClick={() => setSelectedDate(dateList[Math.max(0, currentIndex - 1)])}
                         disabled={currentIndex === 0}
-                        className={`p-2 rounded-full border ${currentIndex === 0 ? 'text-gray-300 border-gray-200' : 'text-red-500 border-red-200 hover:bg-red-50'}`}
+                        className={`p-2 rounded-full border ${currentIndex === 0 ? "text-gray-300 border-gray-200" : "text-red-500 border-red-200 hover:bg-red-50"}`}
                         aria-label="Giorno precedente"
                     >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2}
-                             viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
                         </svg>
                     </button>
@@ -109,19 +116,17 @@ const PrenotazioniAdminModal: React.FC<Props> = ({prenotazioni, onClose, isOpen}
                     <button
                         onClick={() => setSelectedDate(dateList[Math.min(dateList.length - 1, currentIndex + 1)])}
                         disabled={currentIndex === dateList.length - 1}
-                        className={`p-2 rounded-full border ${currentIndex === dateList.length - 1 ? 'text-gray-300 border-gray-200' : 'text-red-500 border-red-200 hover:bg-red-50'}`}
+                        className={`p-2 rounded-full border ${currentIndex === dateList.length - 1 ? "text-gray-300 border-gray-200" : "text-red-500 border-red-200 hover:bg-red-50"}`}
                         aria-label="Giorno successivo"
                     >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2}
-                             viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
                         </svg>
                     </button>
                     <span className="ml-4 text-black font-semibold text-base">
-                        {selectedDate === today ? 'Oggi' : formatDateLabel(selectedDate)}
-                    </span>
+                 {selectedDate === today ? "Oggi" : formatDateLabel(selectedDate)}
+               </span>
                 </div>
-
                 {prenotazioniDelGiorno.length === 0 ? (
                     <div className="text-center text-gray-400 py-12 text-lg font-medium">
                         Nessuna prenotazione per questa data.
@@ -142,11 +147,14 @@ const PrenotazioniAdminModal: React.FC<Props> = ({prenotazioni, onClose, isOpen}
                             {prenotazioniDelGiorno.map((p, idx) => (
                                 <tr
                                     key={p.id}
-                                    className={`transition-colors duration-150 ${idx % 2 === 0 ? 'bg-white' : 'bg-red-50'} hover:bg-red-100`}
-                                    style={{borderRadius: 16}}
+                                    className={`transition-colors duration-150 ${idx % 2 === 0 ? "bg-white" : "bg-red-50"} hover:bg-red-100`}
                                 >
-                                    <td className="px-5 py-3 font-mono text-black text-base rounded-l-2xl">{p.ora_inizio} - {p.ora_fine}</td>
-                                    <td className="px-5 py-3 text-black text-base">{p.user_nome} {p.user_cognome}</td>
+                                    <td className="px-5 py-3 font-mono text-black text-base rounded-l-2xl">
+                                        {p.ora_inizio} - {p.ora_fine}
+                                    </td>
+                                    <td className="px-5 py-3 text-black text-base">
+                                        {p.user_nome} {p.user_cognome}
+                                    </td>
                                     <td className="px-5 py-3 text-black text-base">{p.servizio_nome}</td>
                                     <td className="px-5 py-3 text-black text-base">{p.veicolo}</td>
                                     <td className="px-5 py-3 text-black text-base rounded-r-2xl">{p.targa}</td>

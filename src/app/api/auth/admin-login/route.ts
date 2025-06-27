@@ -15,36 +15,17 @@ interface Admin {
 export async function POST(request: Request) {
     try {
         const {username, password} = await request.json();
-
-        if (!username || !password) {
-            return NextResponse.json(
-                {error: 'Username e password sono obbligatori'},
-                {status: 400}
-            );
-        }
+        if (!username || !password)
+            return NextResponse.json({error: 'Username e password sono obbligatori'}, {status: 400});
 
         const db = getDb();
-
         const admin = db.prepare(
             'SELECT id, nome, cognome, password, is_admin, is_super_admin FROM users WHERE telefono = ? AND is_super_admin = 1'
         ).get(username) as Admin | undefined;
 
-        if (!admin) {
-            return NextResponse.json(
-                {error: 'Credenziali non valide'},
-                {status: 401}
-            );
-        }
-
-        const passwordMatch = await bcrypt.compare(password, admin.password);
-
-        if (!passwordMatch) {
-            return NextResponse.json(
-                {error: 'Credenziali non valide'},
-                {status: 401}
-            );
-        }
-
+        if (!admin || !(await bcrypt.compare(password, admin.password)))
+            return NextResponse.json({error: 'Credenziali non valide'}, {status: 401});
+            
         const token = generateToken(admin.id);
 
         return NextResponse.json({
@@ -58,11 +39,7 @@ export async function POST(request: Request) {
             },
             token
         });
-    } catch (error) {
-        console.error('Errore durante il login admin:', error);
-        return NextResponse.json(
-            {error: 'Errore durante il login'},
-            {status: 500}
-        );
+    } catch {
+        return NextResponse.json({error: 'Errore durante il login'}, {status: 500});
     }
 }

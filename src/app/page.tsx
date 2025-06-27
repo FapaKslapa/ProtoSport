@@ -11,7 +11,6 @@ export default function LoginMobile() {
     const router = useRouter();
 
     useEffect(() => {
-        // Controlla se l'utente è già autenticato
         const token = Cookies.get('authToken');
         if (token) {
             router.push('/dashboard');
@@ -27,7 +26,6 @@ export default function LoginMobile() {
 
     return (
         <div className="relative h-screen w-screen overflow-hidden bg-black">
-            {/* Sfondo con immagine della moto */}
             <div className="absolute inset-0 z-0">
                 <Image
                     src="/Sfondo Login.jpg"
@@ -38,7 +36,6 @@ export default function LoginMobile() {
                 />
             </div>
 
-            {/* Pop-up che emerge dal basso */}
             <div
                 className={`fixed bottom-0 left-0 right-0 z-50 bg-white rounded-b-none rounded-4xl shadow-xl transform transition-transform duration-300 ease-out ${
                     showPopup ? 'translate-y-0' : 'translate-y-full'
@@ -47,7 +44,6 @@ export default function LoginMobile() {
             >
                 <div className="w-16 h-1 mx-auto mt-4 mb-5"/>
 
-                {/* Logo al centro */}
                 <div className="flex justify-center mb-3 px-6">
                     <Image
                         src="/Logo Compresso.png"
@@ -58,7 +54,6 @@ export default function LoginMobile() {
                     />
                 </div>
 
-                {/* Testo motto */}
                 <p className="text-center text-zinc-950 font-medium mb-6 px-6 text-lg">
                     We love your motorbike
                 </p>
