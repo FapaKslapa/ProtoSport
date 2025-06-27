@@ -4,35 +4,36 @@ import {useState, useEffect} from "react";
 import {useRouter} from "next/navigation";
 import Image from "next/image";
 import Cookies from "js-cookie";
-import VeicoloForm from "@/app/components/VeicoloForm";
-import VeicoloCard from "@/app/components/VeicoloCard";
-import ServizioCard from "@/app/components/ServizioCardUser";
-import PrenotazioneModal from "@/app/components/PrenotazioneModal";
-import PrenotazioniUtenteModal from "@/app/components/PrenotazioneUtenteModal";
-import StoricoPrenotazioniModal from "@/app/components/StoricoPrenotazioniModal";
-
-type Veicolo = {
-    id: number;
-    marca: string;
-    modello: string;
-    targa: string;
-    tipo: string;
-    anno?: number;
-    cilindrata?: number;
-};
-
-type Servizio = {
-    id: number;
-    nome: string;
-    descrizione: string;
-    durata_minuti: number;
-    prezzo: number;
-};
+import VeicoloForm from "@/components/VeicoloForm";
+import VeicoloCard from "@/components/VeicoloCard";
+import ServizioCard from "@/components/ServizioCardUser";
+import PrenotazioneModal from "@/components/PrenotazioneModal";
+import PrenotazioniUtenteModal from "@/components/PrenotazioneUtenteModal";
+import StoricoPrenotazioniModal from "@/components/StoricoPrenotazioniModal";
+import Alert from "@/components/Alert";
+import {
+    Veicolo,
+    Servizio,
+    PrenotazioneUtente,
+    Message
+} from "@/types/user";
 
 export default function Dashboard() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
-    const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+    const [message, setMessage] = useState<Message | null>(null);
+    const [showAlert, setShowAlert] = useState(false);
+
+    useEffect(() => {
+        if (message) {
+            setShowAlert(true);
+            const timer = setTimeout(() => {
+                setShowAlert(false);
+                setTimeout(() => setMessage(null), 400);
+            }, 3500);
+            return () => clearTimeout(timer);
+        }
+    }, [message]);
 
     const [showModal, setShowModal] = useState(false);
     const [veicoli, setVeicoli] = useState<Veicolo[]>([]);
@@ -45,7 +46,7 @@ export default function Dashboard() {
     const [isPrenotazioneLoading, setIsPrenotazioneLoading] = useState(false);
 
     const [showPrenotazioni, setShowPrenotazioni] = useState(false);
-    const [prenotazioni, setPrenotazioni] = useState<any[]>([]);
+    const [prenotazioni, setPrenotazioni] = useState<PrenotazioneUtente[]>([]);
     const [isLoadingPrenotazioni, setIsLoadingPrenotazioni] = useState(false);
 
     const [editVeicolo, setEditVeicolo] = useState<Veicolo | null>(null);
@@ -53,7 +54,7 @@ export default function Dashboard() {
     const [isDeleting, setIsDeleting] = useState(false);
 
     const [showStorico, setShowStorico] = useState(false);
-    const [storicoPrenotazioni, setStoricoPrenotazioni] = useState<any[]>([]);
+    const [storicoPrenotazioni, setStoricoPrenotazioni] = useState<PrenotazioneUtente[]>([]);
     const [isLoadingStorico, setIsLoadingStorico] = useState(false);
 
     useEffect(() => {
@@ -65,7 +66,6 @@ export default function Dashboard() {
         fetchVeicoli();
         fetchServizi();
         setIsLoading(false);
-        // eslint-disable-next-line
     }, [router]);
 
     const fetchVeicoli = async () => {
@@ -164,7 +164,7 @@ export default function Dashboard() {
         }
     };
 
-    const handleSaveVeicolo = async (veicolo: any) => {
+    const handleSaveVeicolo = async (veicolo: Omit<Veicolo, "id">) => {
         try {
             const res = await fetch("/api/veicoli", {
                 method: "POST",
@@ -189,7 +189,7 @@ export default function Dashboard() {
         if (v) setEditVeicolo(v);
     };
 
-    const handleUpdateVeicolo = async (veicolo: any) => {
+    const handleUpdateVeicolo = async (veicolo: Veicolo) => {
         try {
             const res = await fetch(`/api/veicoli/${veicolo.id}`, {
                 method: "PUT",
@@ -244,7 +244,12 @@ export default function Dashboard() {
         setShowPrenotaModal(true);
     };
 
-    const handleSavePrenotazione = async (prenotazione: any) => {
+    const handleSavePrenotazione = async (prenotazione: {
+        veicoloId: number;
+        servizioId: number;
+        data: string;
+        ora: string;
+    }) => {
         setIsPrenotazioneLoading(true);
         try {
             const res = await fetch("/api/prenotazioni", {
@@ -276,6 +281,15 @@ export default function Dashboard() {
 
     return (
         <div className="flex flex-col min-h-screen bg-white pb-16">
+            <Alert
+                message={message}
+                show={showAlert}
+                onClose={() => {
+                    setShowAlert(false);
+                    setTimeout(() => setMessage(null), 400);
+                }}
+            />
+
             <nav className="w-full py-4 px-6 relative" style={{backgroundColor: "#FA481B"}}>
                 <div className="flex justify-between items-center">
                     <div className="flex-1 flex justify-center">
@@ -300,58 +314,64 @@ export default function Dashboard() {
                 </div>
             </nav>
 
-            <main className="flex-grow p-4 max-w-full mx-auto">
-                {message && (
-                    <div
-                        className={`p-3 mb-4 rounded-md ${message.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                        {message.text}
-                    </div>
-                )}
-
-                <h2 className="text-xl font-medium mb-4 text-black">Garage</h2>
+            <main
+                className="flex-grow mx-auto w-full"
+                style={{
+                    paddingLeft: "4vw",
+                    paddingRight: "4vw",
+                    paddingTop: "24px",
+                    paddingBottom: "16px",
+                    maxWidth: "100vw"
+                }}
+            >
+                <h2 className="text-xl font-medium mb-4 text-black text-left">Garage</h2>
                 {isLoadingVeicoli ? (
-                    <div className="flex justify-center my-8">
+                    <div className="flex justify-center my-8 w-full">
                         <div
                             className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
                     </div>
                 ) : veicoli.length > 0 ? (
-                    <div className="flex overflow-x-auto pb-4 w-full max-w-full -mx-4 px-4">
-                        {veicoli.map(veicolo => (
-                            <VeicoloCard
-                                key={veicolo.id}
-                                veicolo={veicolo}
-                                onEdit={handleEditVeicolo}
-                                onDelete={handleDeleteVeicolo}
-                            />
-                        ))}
+                    <div className="w-full flex justify-center">
+                        <div className="flex overflow-x-auto pb-4 w-full max-w-full px-4 justify-start">
+                            {veicoli.map(veicolo => (
+                                <VeicoloCard
+                                    key={veicolo.id}
+                                    veicolo={veicolo}
+                                    onEdit={handleEditVeicolo}
+                                    onDelete={handleDeleteVeicolo}
+                                />
+                            ))}
+                        </div>
                     </div>
                 ) : (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-gray-500 w-full flex flex-col items-center">
                         <p>Non hai ancora aggiunto nessun veicolo.</p>
                         <p className="mt-2">Clicca sul pulsante + per aggiungerne uno.</p>
                     </div>
                 )}
 
-                <h2 className="text-xl font-medium mb-4 mt-8 text-black">Servizi Disponibili</h2>
+                <h2 className="text-xl font-medium mb-4 mt-8 text-black text-left">Servizi Disponibili</h2>
                 {isLoadingServizi ? (
-                    <div className="flex justify-center my-8">
+                    <div className="flex justify-center my-8 w-full">
                         <div
                             className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
                     </div>
                 ) : servizi.length > 0 ? (
-                    <div className="flex overflow-x-auto pb-4 w-full max-w-full -mx-4 px-4">
-                        {servizi.map(servizio => (
-                            <div
-                                key={servizio.id}
-                                onClick={() => handlePrenotaServizio(servizio.id)}
-                                className="cursor-pointer transition-transform transform hover:scale-[1.02] min-w-[320px] max-w-xs mr-4 last:mr-0"
-                            >
-                                <ServizioCard servizio={servizio}/>
-                            </div>
-                        ))}
+                    <div className="w-full flex justify-center">
+                        <div className="flex overflow-x-auto pb-4 w-full max-w-full px-4 justify-start">
+                            {servizi.map(servizio => (
+                                <div
+                                    key={servizio.id}
+                                    onClick={() => handlePrenotaServizio(servizio.id)}
+                                    className="cursor-pointer transition-transform transform hover:scale-[1.02] min-w-[320px] max-w-xs mr-4 last:mr-0 flex justify-center"
+                                >
+                                    <ServizioCard servizio={servizio}/>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 ) : (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-gray-500 w-full flex flex-col items-center">
                         <p>Nessun servizio disponibile al momento.</p>
                     </div>
                 )}

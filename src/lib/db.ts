@@ -77,6 +77,7 @@ export function initDb() {
                 ora_inizio        TIME    NOT NULL,
                 ora_fine          TIME    NOT NULL,
                 note              TEXT,
+                stato             TEXT    NOT NULL DEFAULT 'richiesta', -- nuovo campo
                 data_creazione    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
                 FOREIGN KEY (veicolo_id) REFERENCES veicoli (id) ON DELETE CASCADE,
@@ -123,6 +124,7 @@ export function initDb() {
                                   WHEN EXISTS (
                                       SELECT 1 FROM prenotazioni
                                       WHERE data_prenotazione = NEW.data_prenotazione
+                                      AND stato != 'rifiutata'
                                       AND ((ora_inizio <= NEW.ora_inizio AND ora_fine > NEW.ora_inizio)
                                       OR (ora_inizio < NEW.ora_fine AND ora_fine >= NEW.ora_fine)
                                       OR (ora_inizio >= NEW.ora_inizio AND ora_fine <= NEW.ora_fine))
@@ -163,4 +165,3 @@ export function getDb() {
     }
     return dbInstance;
 }
-

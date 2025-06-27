@@ -1,17 +1,27 @@
 "use client";
 
-import React, {useState} from "react";
+import React, {useEffect, useState, ChangeEvent, FormEvent, KeyboardEvent} from "react";
 import {FaCalendarAlt, FaLock} from "react-icons/fa";
+import Alert from "@/components/Alert";
+
+export interface Orario {
+    id?: number;
+    giorno_settimana: number;
+    ora_inizio: string;
+    ora_fine: string;
+}
+
+type OrarioFormData = {
+    giorno_settimana: number;
+    ora_inizio: string;
+    ora_fine: string;
+    is_closed: boolean;
+};
 
 interface OrarioFormProps {
-    orario?: {
-        id?: number;
-        giorno_settimana: number;
-        ora_inizio: string;
-        ora_fine: string;
-    };
+    orario?: Orario;
     giornoSettimana: number;
-    onSave: (orario?: any) => Promise<void>;
+    onSave: (orario?: Omit<Orario, "is_closed">) => Promise<void>;
     onCancel: () => void;
 }
 
@@ -31,24 +41,47 @@ const OrarioForm: React.FC<OrarioFormProps> = ({
                                                    onSave,
                                                    onCancel,
                                                }) => {
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<OrarioFormData>({
         giorno_settimana: giornoSettimana,
-        ora_inizio: orario?.ora_inizio || "09:00",
-        ora_fine: orario?.ora_fine || "18:00",
+        ora_inizio: orario?.ora_inizio ?? "09:00",
+        ora_fine: orario?.ora_fine ?? "18:00",
         is_closed: !orario,
     });
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showAlert, setShowAlert] = useState(false);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    useEffect(() => {
+        if (error) {
+            setShowAlert(true);
+            const timer = setTimeout(() => {
+                setShowAlert(false);
+                setTimeout(() => setError(null), 400);
+            }, 3500);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
+
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         const {name, value, type, checked} = e.target;
-        setFormData((f) => ({
-            ...f,
+        setFormData((prev) => ({
+            ...prev,
             [name]: type === "checkbox" ? checked : value,
         }));
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleToggleClosed = () => {
+        setFormData((prev) => ({...prev, is_closed: !prev.is_closed}));
+    };
+
+    const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+        if (e.key === " " || e.key === "Enter") {
+            e.preventDefault();
+            handleToggleClosed();
+        }
+    };
+
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setError(null);
         setIsSubmitting(true);
@@ -64,8 +97,14 @@ const OrarioForm: React.FC<OrarioFormProps> = ({
             }
             const {is_closed, ...dataToSave} = {...formData, id: orario?.id};
             await onSave(dataToSave);
-        } catch (err: any) {
-            setError(err?.message || err?.error || "Si è verificato un errore");
+        } catch (err) {
+            const errorMsg =
+                err instanceof Error
+                    ? err.message
+                    : typeof err === "object" && err && "message" in err
+                        ? (err as { message: string }).message
+                        : "Si è verificato un errore";
+            setError(errorMsg);
         } finally {
             setIsSubmitting(false);
         }
@@ -77,6 +116,11 @@ const OrarioForm: React.FC<OrarioFormProps> = ({
             className="w-full max-w-md mx-auto flex flex-col gap-8 relative pb-28"
             style={{minWidth: 320}}
         >
+            <Alert
+                message={error ? {text: error, type: "error"} : null}
+                show={showAlert}
+                onClose={() => setShowAlert(false)}
+            />
             <div className="flex items-center justify-between gap-4 mb-2">
                 <div className="flex items-center gap-3">
                     <FaCalendarAlt className="text-red-500 w-6 h-6"/>
@@ -93,24 +137,18 @@ const OrarioForm: React.FC<OrarioFormProps> = ({
                         type="button"
                         aria-pressed={formData.is_closed}
                         aria-label="Giorno di chiusura"
-                        onClick={() =>
-                            setFormData((f) => ({...f, is_closed: !f.is_closed}))
-                        }
+                        onClick={handleToggleClosed}
                         className={`w-12 h-6 rounded-full transition-colors duration-200 flex items-center px-1 ${
                             formData.is_closed ? "bg-red-500" : "bg-gray-200"
                         }`}
                         tabIndex={0}
-                        onKeyDown={(e) => {
-                            if (e.key === " " || e.key === "Enter") {
-                                setFormData((f) => ({...f, is_closed: !f.is_closed}));
-                            }
-                        }}
+                        onKeyDown={handleKeyDown}
                     >
-    <span
-        className={`w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-            formData.is_closed ? "translate-x-5" : ""
-        }`}
-    />
+                        <span
+                            className={`w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                                formData.is_closed ? "translate-x-5" : ""
+                            }`}
+                        />
                     </button>
                 </div>
             </div>
@@ -155,20 +193,6 @@ const OrarioForm: React.FC<OrarioFormProps> = ({
                             required
                         />
                     </div>
-                </div>
-            )}
-
-            {error && (
-                <div className="bg-red-100 text-red-800 p-4 rounded-md text-base font-semibold flex items-center gap-3">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"
-                        />
-                    </svg>
-                    {error}
                 </div>
             )}
 

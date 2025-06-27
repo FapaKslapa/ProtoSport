@@ -1,13 +1,14 @@
 import React from "react";
+import Avatar from "@/components/Avatar";
 
-interface Admin {
+export interface Admin {
     id: number;
     nome: string;
     cognome: string;
     telefono: string;
 }
 
-interface AdminCardProps {
+export interface AdminCardProps {
     admin: Admin;
     onDelete: (id: number) => void;
     onEdit: (admin: Admin) => void;
@@ -15,26 +16,14 @@ interface AdminCardProps {
 
 const AdminCard: React.FC<AdminCardProps> = ({admin, onDelete, onEdit}) => {
     const {id, nome, cognome, telefono} = admin;
-    const iniziali = (nome[0] + cognome[0]).toUpperCase();
-    const colorClass = (() => {
-        const colors = [
-            "bg-blue-500", "bg-green-500", "bg-yellow-500",
-            "bg-purple-500", "bg-pink-500", "bg-indigo-500",
-            "bg-red-500", "bg-orange-500", "bg-teal-500"
-        ];
-        const hash = (nome + cognome).split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-        return colors[hash % colors.length];
-    })();
-       
+
     return (
         <div
-            className="bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.12),_0_4px_8px_rgba(0,0,0,0.06)] border border-gray-200 hover:shadow-[0_16px_45px_rgba(0,0,0,0.15),_0_8px_12px_rgba(0,0,0,0.1)] transition-shadow duration-300 min-w-[280px] w-[280px] flex-shrink-0 mr-4">
+            className="bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.12),_0_4px_8px_rgba(0,0,0,0.06)] border border-gray-200 hover:shadow-[0_16px_45px_rgba(0,0,0,0.15),_0_8px_12px_rgba(0,0,0,0.1)] transition-shadow duration-300 min-w-[280px] w-[280px] flex-shrink-0 mr-4"
+        >
             <div className="p-5">
                 <div className="flex items-center mb-4">
-                    <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl ${colorClass}`}>
-                        {iniziali}
-                    </div>
+                    <Avatar nome={nome} cognome={cognome}/>
                     <div className="ml-4">
                         <h3 className="font-bold text-lg text-black">{nome} {cognome}</h3>
                         <p className="text-black text-sm">{telefono}</p>
@@ -45,6 +34,7 @@ const AdminCard: React.FC<AdminCardProps> = ({admin, onDelete, onEdit}) => {
                         onClick={() => onEdit(admin)}
                         className="text-blue-600 p-2 hover:bg-blue-100 rounded-full transition-colors mr-2"
                         aria-label="Modifica admin"
+                        type="button"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24"
                              stroke="currentColor">
@@ -56,6 +46,7 @@ const AdminCard: React.FC<AdminCardProps> = ({admin, onDelete, onEdit}) => {
                         onClick={() => onDelete(id)}
                         className="text-red-600 p-2 hover:bg-red-100 rounded-full transition-colors"
                         aria-label="Elimina admin"
+                        type="button"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24"
                              stroke="currentColor">

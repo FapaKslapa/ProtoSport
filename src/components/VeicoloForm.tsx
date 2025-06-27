@@ -1,5 +1,6 @@
 "use client";
 import {useState, useEffect} from "react";
+import Alert from "@/components/Alert";
 
 type VeicoloFormProps = {
     onSave: (veicolo: any) => void;
@@ -21,8 +22,8 @@ export default function VeicoloForm({onSave, initialData, onCancel}: VeicoloForm
     const [catalogo, setCatalogo] = useState<CatalogoData>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showAlert, setShowAlert] = useState(false);
 
-    // Stati controllati, sempre coerenti con initialData
     const [marca, setMarca] = useState(initialData?.marca || "");
     const [modello, setModello] = useState(initialData?.modello || "");
     const [anno, setAnno] = useState(initialData?.anno ? initialData.anno.toString() : "");
@@ -112,6 +113,17 @@ export default function VeicoloForm({onSave, initialData, onCancel}: VeicoloForm
         onSave(veicolo);
     };
 
+    useEffect(() => {
+        if (error) {
+            setShowAlert(true);
+            const timer = setTimeout(() => {
+                setShowAlert(false);
+                setTimeout(() => setError(null), 400);
+            }, 3500);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
+
     if (isLoading) {
         return (
             <div className="flex justify-center py-8">
@@ -125,9 +137,14 @@ export default function VeicoloForm({onSave, initialData, onCancel}: VeicoloForm
             onSubmit={handleSubmit}
             className="max-w-md mx-auto p-0 space-y-6"
         >
-            {error && (
-                <div className="p-3 mb-2 rounded-md bg-red-100 text-red-800 text-sm text-center">{error}</div>
-            )}
+            <Alert
+                message={error ? { text: error, type: "error" } : null}
+                show={showAlert}
+                onClose={() => {
+                    setShowAlert(false);
+                    setTimeout(() => setError(null), 400);
+                }}
+            />
 
             {/* Marca */}
             <div>

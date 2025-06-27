@@ -4,8 +4,9 @@ import {useState, useEffect, useCallback} from "react";
 import {useRouter} from "next/navigation";
 import Image from "next/image";
 import Cookies from "js-cookie";
-import AdminCard from "@/app/components/AdminCard";
-import AdminForm from "@/app/components/AdminForm";
+import AdminCard from "@/components/AdminCard";
+import AdminForm from "@/components/AdminForm";
+import Alert from "@/components/Alert";
 
 interface Admin {
     id: number;
@@ -24,6 +25,8 @@ export default function SuperAdminDashboard() {
     const [successMessage, setSuccessMessage] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
+    const [showAlert, setShowAlert] = useState(false);
+    const [alertMsg, setAlertMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
     const fetchAdmins = useCallback(async () => {
         setIsLoadingAction(true);
@@ -63,6 +66,31 @@ export default function SuperAdminDashboard() {
         }
         setIsLoading(false);
     }, [router, fetchAdmins]);
+
+    useEffect(() => {
+        if (successMessage) {
+            setAlertMsg({ text: successMessage, type: "success" });
+        }
+    }, [successMessage]);
+    useEffect(() => {
+        if (error) {
+            setAlertMsg({ text: error, type: "error" });
+        }
+    }, [error]);
+    useEffect(() => {
+        if (alertMsg) {
+            setShowAlert(true);
+            const timer = setTimeout(() => {
+                setShowAlert(false);
+                setTimeout(() => {
+                    setAlertMsg(null);
+                    setError("");
+                    setSuccessMessage("");
+                }, 400);
+            }, 3500);
+            return () => clearTimeout(timer);
+        }
+    }, [alertMsg]);
 
     const handleSaveAdmin = async (adminData: { id?: number; nome: string; cognome: string; telefono: string }) => {
         try {
@@ -142,6 +170,18 @@ export default function SuperAdminDashboard() {
 
     return (
         <div className="flex flex-col min-h-screen bg-white pb-16">
+            <Alert
+                message={alertMsg}
+                show={showAlert}
+                onClose={() => {
+                    setShowAlert(false);
+                    setTimeout(() => {
+                        setAlertMsg(null);
+                        setError("");
+                        setSuccessMessage("");
+                    }, 400);
+                }}
+            />
             <nav className="w-full py-4 px-6" style={{backgroundColor: "#FA481B"}}>
                 <div className="flex justify-center items-center">
                     <Image
@@ -155,8 +195,17 @@ export default function SuperAdminDashboard() {
                 </div>
             </nav>
 
-            <main className="flex-grow p-4 max-w-full mx-auto">
-                <div className="bg-white shadow-md rounded-lg p-4 mb-6">
+            <main
+                className="flex-grow mx-auto w-full"
+                style={{
+                    paddingLeft: "4vw",
+                    paddingRight: "4vw",
+                    paddingTop: "24px",
+                    paddingBottom: "16px",
+                    maxWidth: "100vw"
+                }}
+            >
+                <div className="bg-white shadow-md rounded-lg p-4 mb-6 w-full max-w-2xl mx-auto text-center">
                     <h2 className="text-xl font-bold text-black">
                         Benvenuto, {user?.nome} {user?.cognome}
                     </h2>
@@ -165,33 +214,26 @@ export default function SuperAdminDashboard() {
                     </p>
                 </div>
 
-                {successMessage && (
-                    <div className="p-3 mb-4 rounded-md bg-green-100 text-green-800">{successMessage}</div>
-                )}
-                {error && (
-                    <div className="p-3 mb-4 rounded-md bg-red-100 text-red-800">{error}</div>
-                )}
-
-                <h2 className="text-xl font-medium mb-4 text-black">Gestione Amministratori</h2>
 
                 {isLoadingAction ? (
-                    <div className="flex justify-center my-8">
-                        <div
-                            className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
+                    <div className="flex justify-center my-8 w-full">
+                        <div className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
                     </div>
                 ) : admins.length > 0 ? (
-                    <div className="flex overflow-x-auto pb-4 w-full max-w-full -mx-4 px-4">
-                        {admins.map((admin) => (
-                            <AdminCard
-                                key={admin.id}
-                                admin={admin}
-                                onDelete={handleDeleteAdmin}
-                                onEdit={handleEditAdmin}
-                            />
-                        ))}
+                    <div className="w-full flex justify-center">
+                        <div className="flex overflow-x-auto pb-4 w-full max-w-full px-4 justify-start">
+                            {admins.map((admin) => (
+                                <AdminCard
+                                    key={admin.id}
+                                    admin={admin}
+                                    onDelete={handleDeleteAdmin}
+                                    onEdit={handleEditAdmin}
+                                />
+                            ))}
+                        </div>
                     </div>
                 ) : (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-gray-500 w-full flex flex-col items-center">
                         <p>Non ci sono admin registrati.</p>
                         <p className="mt-2">Usa il pulsante + per aggiungere un nuovo amministratore.</p>
                     </div>

@@ -1,57 +1,66 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect} from "react";
+import Alert from "@/components/Alert";
+import {Servizio as ServizioType} from "@/types/admin";
 
-interface Servizio {
-    id?: number;
-    nome: string;
-    descrizione: string;
-    durata_minuti: number;
-    prezzo: number;
-}
+type ServizioFormData = Omit<ServizioType, "id"> & { id?: number };
 
 interface ServizioFormProps {
-    servizio?: Servizio;
-    onSave: (servizio: Servizio) => Promise<void>;
+    servizio?: ServizioFormData;
+    onSave: (servizio: ServizioType) => Promise<void>;
     onCancel: () => void;
 }
 
 const ServizioForm: React.FC<ServizioFormProps> = ({servizio, onSave, onCancel}) => {
-    const [formData, setFormData] = useState<Servizio>({
-        nome: '',
-        descrizione: '',
+    const [formData, setFormData] = useState<ServizioFormData>({
+        nome: "",
+        descrizione: "",
         durata_minuti: 60,
-        prezzo: 0
+        prezzo: 0,
     });
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [error, setError] = useState("");
+    const [showAlert, setShowAlert] = useState(false);
 
     useEffect(() => {
         if (servizio) setFormData({...servizio});
     }, [servizio]);
 
+    useEffect(() => {
+        if (error) {
+            setShowAlert(true);
+            const timer = setTimeout(() => {
+                setShowAlert(false);
+                setTimeout(() => setError(""), 400);
+            }, 3500);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const {name, value} = e.target;
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            [name]: name === 'prezzo'
+            [name]: name === "prezzo"
                 ? parseFloat(value) || 0
-                : name === 'durata_minuti'
+                : name === "durata_minuti"
                     ? parseInt(value) || 0
-                    : value
+                    : value,
         }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
+        setError("");
         if (!formData.nome.trim()) {
-            setError('Il nome del servizio è obbligatorio');
+            setError("Il nome del servizio è obbligatorio");
             return;
         }
         setIsLoading(true);
         try {
-            await onSave(servizio?.id ? {...formData, id: servizio.id} : formData);
+            // Passa sempre un oggetto con id (se presente) e tutti i campi richiesti
+            await onSave(formData as ServizioType);
         } catch (err: any) {
-            setError(err?.message || 'Si è verificato un errore');
+            setError(err?.message || "Si è verificato un errore");
         } finally {
             setIsLoading(false);
         }
@@ -63,16 +72,14 @@ const ServizioForm: React.FC<ServizioFormProps> = ({servizio, onSave, onCancel})
             className="p-8 space-y-10"
             style={{minWidth: 320}}
         >
-            {error && (
-                <div
-                    className="bg-red-100 text-red-800 p-4 rounded-md mb-2 text-base font-semibold flex items-center gap-3">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                              d="M12 8v4m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/>
-                    </svg>
-                    {error}
-                </div>
-            )}
+            <Alert
+                message={error ? {text: error, type: "error"} : null}
+                show={showAlert}
+                onClose={() => {
+                    setShowAlert(false);
+                    setTimeout(() => setError(""), 400);
+                }}
+            />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="flex flex-col gap-6">
                     <label className="text-gray-700 font-semibold text-base" htmlFor="nome">
@@ -139,14 +146,7 @@ const ServizioForm: React.FC<ServizioFormProps> = ({servizio, onSave, onCancel})
                     className="py-4 px-8 bg-gradient-to-r from-red-500 to-red-400 text-white rounded-xl font-bold shadow hover:from-red-600 hover:to-red-500 transition-all text-lg flex items-center justify-center gap-2"
                     disabled={isLoading}
                 >
-                    {isLoading && (
-                        <svg className="animate-spin h-5 w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                    strokeWidth="4"/>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                        </svg>
-                    )}
-                    {isLoading ? 'Salvataggio...' : servizio?.id ? 'Aggiorna' : 'Salva'}
+                    {isLoading ? "Salvataggio..." : servizio?.id ? "Aggiorna" : "Salva"}
                 </button>
                 <button
                     type="button"

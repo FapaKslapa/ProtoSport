@@ -1,4 +1,5 @@
 import React, {useState, useEffect} from "react";
+import Alert from "@/components/Alert";
 
 interface AdminFormProps {
     admin?: { id: number; nome: string; cognome: string; telefono: string };
@@ -10,10 +11,22 @@ const AdminForm: React.FC<AdminFormProps> = ({admin, onSave, onCancel}) => {
     const [formData, setFormData] = useState({nome: "", cognome: "", telefono: "+39"});
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
+    const [showAlert, setShowAlert] = useState(false);
 
     useEffect(() => {
         if (admin) setFormData({nome: admin.nome, cognome: admin.cognome, telefono: admin.telefono});
     }, [admin]);
+
+    useEffect(() => {
+        if (error) {
+            setShowAlert(true);
+            const timer = setTimeout(() => {
+                setShowAlert(false);
+                setTimeout(() => setError(""), 400);
+            }, 3500);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
@@ -42,7 +55,14 @@ const AdminForm: React.FC<AdminFormProps> = ({admin, onSave, onCancel}) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            {error && <div className="bg-red-100 text-red-800 p-3 rounded-md mb-4">{error}</div>}
+            <Alert
+                message={error ? { text: error, type: "error" } : null}
+                show={showAlert}
+                onClose={() => {
+                    setShowAlert(false);
+                    setTimeout(() => setError(""), 400);
+                }}
+            />
             <div>
                 <label className="block text-black mb-2">Nome</label>
                 <input

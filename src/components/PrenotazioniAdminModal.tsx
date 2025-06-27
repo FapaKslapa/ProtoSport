@@ -1,16 +1,19 @@
 import React, {useState, useMemo, useEffect} from "react";
+import StatoBadgeAdmin, {StatoPrenotazione} from "./StatoBadgeAdmin";
+import PrenotazioneCard from "./PrenotazioneCard";
 
-type Prenotazione = {
+export interface Prenotazione {
     id: number;
     user_nome: string;
     user_cognome: string;
     servizio_nome: string;
-    data_prenotazione: string;
-    ora_inizio: string;
-    ora_fine: string;
+    data_prenotazione: string; // YYYY-MM-DD
+    ora_inizio: string; // HH:mm
+    ora_fine: string;   // HH:mm
+    stato?: StatoPrenotazione;
     veicolo: string;
     targa: string;
-};
+}
 
 interface Props {
     prenotazioni: Prenotazione[];
@@ -27,16 +30,10 @@ const formatDateLabel = (dateStr: string) =>
         day: "2-digit",
     });
 
-const PrenotazioniAdminModal: React.FC<Props> = ({
-                                                     prenotazioni,
-                                                     onClose,
-                                                     isOpen,
-                                                 }) => {
+const PrenotazioniAdminModal: React.FC<Props> = ({prenotazioni, onClose, isOpen}) => {
     const today = formatDate(new Date());
     const dateList = useMemo(() => {
-        const unique = Array.from(
-            new Set(prenotazioni.map(p => p.data_prenotazione))
-        ).sort();
+        const unique = Array.from(new Set(prenotazioni.map(p => p.data_prenotazione))).sort();
         return unique.length ? unique : [today];
     }, [prenotazioni, today]);
 
@@ -54,16 +51,38 @@ const PrenotazioniAdminModal: React.FC<Props> = ({
     };
 
     const [selectedDate, setSelectedDate] = useState(getClosestDate());
+    const [updatingId, setUpdatingId] = useState<number | null>(null);
+    const [localPrenotazioni, setLocalPrenotazioni] = useState(prenotazioni);
+
+    useEffect(() => {
+        setLocalPrenotazioni(prenotazioni);
+    }, [prenotazioni]);
 
     useEffect(() => {
         setSelectedDate(getClosestDate());
         // eslint-disable-next-line
     }, [dateList.join(","), today]);
 
-    const prenotazioniDelGiorno = prenotazioni
+    const prenotazioniDelGiorno = localPrenotazioni
         .filter(p => p.data_prenotazione === selectedDate)
         .sort((a, b) => a.ora_inizio.localeCompare(b.ora_inizio));
     const currentIndex = dateList.indexOf(selectedDate);
+
+    const handleChangeStato = async (id: number, nuovoStato: StatoPrenotazione) => {
+        setUpdatingId(id);
+        setLocalPrenotazioni(prev =>
+            prev.map(p => p.id === id ? {...p, stato: nuovoStato} : p)
+        );
+        try {
+            await fetch(`/api/prenotazioni/${id}`, {
+                method: "PUT",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({stato: nuovoStato}),
+            });
+        } finally {
+            setUpdatingId(null);
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -74,15 +93,27 @@ const PrenotazioniAdminModal: React.FC<Props> = ({
                 style={{
                     transition: "box-shadow 0.3s",
                     animation: "slideUp 0.3s",
-                    boxShadow:
-                        "0 -10px 30px -5px rgba(0,0,0,0.12), 0 8px 40px 0 rgba(0,0,0,0.18)",
+                    boxShadow: "0 -10px 30px -5px rgba(0,0,0,0.12), 0 8px 40px 0 rgba(0,0,0,0.18)",
                 }}
             >
                 <div className="sticky top-0 bg-white z-20 pb-2 mb-2">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-2xl font-extrabold text-black tracking-tight">
-                            Prenotazioni
-                        </h2>
+                        <div className="flex items-center gap-3">
+                                                                <span className="rounded-full bg-red-100 p-2">
+                                                                    <svg className="w-6 h-6 text-red-500" fill="none"
+                                                                         stroke="currentColor" strokeWidth={2}
+                                                                         viewBox="0 0 24 24">
+                                                                        <rect x="3" y="4" width="18" height="16" rx="2"
+                                                                              stroke="currentColor" strokeWidth="2"/>
+                                                                        <path strokeLinecap="round"
+                                                                              strokeLinejoin="round" strokeWidth={2}
+                                                                              d="M16 2v4M8 2v4"/>
+                                                                        <line x1="3" y1="10" x2="21" y2="10"
+                                                                              stroke="currentColor" strokeWidth="2"/>
+                                                                    </svg>
+                                                                </span>
+                            <h2 className="text-2xl font-extrabold text-black tracking-tight">Prenotazioni</h2>
+                        </div>
                         <button
                             onClick={onClose}
                             className="text-gray-400 hover:text-red-500 transition-colors"
@@ -99,7 +130,7 @@ const PrenotazioniAdminModal: React.FC<Props> = ({
                             onClick={() => setSelectedDate(dateList[Math.max(0, currentIndex - 1)])}
                             disabled={currentIndex === 0}
                             className={`p-3 rounded-full border bg-white shadow transition-all duration-150
-                                                                ${currentIndex === 0 ? "text-gray-300 border-gray-200" : "text-red-500 border-red-200 hover:bg-red-50 hover:scale-110"}`}
+                                                                    ${currentIndex === 0 ? "text-gray-300 border-gray-200" : "text-red-500 border-red-200 hover:bg-red-50 hover:scale-110"}`}
                             aria-label="Giorno precedente"
                         >
                             <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2}
@@ -109,13 +140,13 @@ const PrenotazioniAdminModal: React.FC<Props> = ({
                         </button>
                         <span
                             className="px-6 py-2 rounded-full bg-red-50 text-black font-bold text-lg shadow border border-red-100 min-w-[180px] text-center">
-                            {selectedDate === today ? "Oggi" : formatDateLabel(selectedDate)}
-                        </span>
+                                                                {selectedDate === today ? "Oggi" : formatDateLabel(selectedDate)}
+                                                            </span>
                         <button
                             onClick={() => setSelectedDate(dateList[Math.min(dateList.length - 1, currentIndex + 1)])}
                             disabled={currentIndex === dateList.length - 1}
                             className={`p-3 rounded-full border bg-white shadow transition-all duration-150
-                                                                ${currentIndex === dateList.length - 1 ? "text-gray-300 border-gray-200" : "text-red-500 border-red-200 hover:bg-red-50 hover:scale-110"}`}
+                                                                    ${currentIndex === dateList.length - 1 ? "text-gray-300 border-gray-200" : "text-red-500 border-red-200 hover:bg-red-50 hover:scale-110"}`}
                             aria-label="Giorno successivo"
                         >
                             <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2}
@@ -131,38 +162,22 @@ const PrenotazioniAdminModal: React.FC<Props> = ({
                     </div>
                 ) : (
                     <div className="flex overflow-x-auto pb-2 -mx-2 px-2 gap-x-7">
-                        {prenotazioniDelGiorno.map((p, idx) => (
-                            <div
-                                key={p.id}
-                                className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 flex flex-col gap-3 hover:shadow-2xl transition-all duration-200 min-w-[320px] max-w-xs w-full"
-                            >
-                                <div className="flex items-center justify-between">
-                                                                    <span
-                                                                        className="bg-red-100 text-black font-bold px-3 py-1 rounded-full text-sm font-mono">
-                                                                        {p.ora_inizio} - {p.ora_fine}
-                                                                    </span>
-                                    <span
-                                        className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs font-semibold">
-                                                                        {p.targa}
-                                                                    </span>
-                                </div>
-                                <div>
-                                    <div className="text-lg font-bold text-black mb-1">{p.servizio_nome}</div>
-                                    <div className="text-gray-700 font-medium">{p.veicolo}</div>
-                                </div>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor"
-                                         strokeWidth={2} viewBox="0 0 24 24">
-                                        <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2"
-                                                fill="currentColor" fillOpacity="0.15"/>
-                                        <path strokeLinecap="round" strokeLinejoin="round"
-                                              d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"/>
-                                    </svg>
-                                    <span
-                                        className="text-black text-sm font-semibold">{p.user_nome} {p.user_cognome}</span>
-                                </div>
-                            </div>
-                        ))}
+                        {prenotazioniDelGiorno.map((p) => {
+                            const oggi = new Date();
+                            oggi.setHours(0, 0, 0, 0);
+                            const dataPren = new Date(p.data_prenotazione);
+                            dataPren.setHours(0, 0, 0, 0);
+                            const isFutura = dataPren >= oggi;
+                            return (
+                                <PrenotazioneCard
+                                    key={p.id}
+                                    prenotazione={p}
+                                    isFutura={isFutura}
+                                    onChangeStato={nuovo => handleChangeStato(p.id, nuovo)}
+                                    updating={updatingId === p.id}
+                                />
+                            );
+                        })}
                     </div>
                 )}
             </div>

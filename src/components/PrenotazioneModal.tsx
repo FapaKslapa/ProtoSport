@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, FormEvent} from "react";
 import VeicoloCardMini from "./VeicoloCardMini";
 import CardServizioMini from "./CardServizioMini";
 import CalendarElegant from "./CalendarElegant";
@@ -25,18 +25,25 @@ type Fascia = {
     ora_fine: string;
 };
 
-function formatDate(date: Date) {
-    return date.toISOString().split("T")[0];
-}
+type PrenotazioneData = {
+    veicolo_id: number;
+    servizio_id: number;
+    data_prenotazione: string;
+    ora_inizio: string;
+    ora_fine?: string;
+    note: string;
+};
 
 interface PrenotazioneModalProps {
     veicoli: Veicolo[];
     servizi: Servizio[];
     servizioPreselezionato?: number;
-    onSave: (data: any) => void;
+    onSave: (data: PrenotazioneData) => void;
     onCancel: () => void;
     isLoading: boolean;
 }
+
+const formatDate = (date: Date): string => date.toISOString().split("T")[0];
 
 const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
                                                                  veicoli,
@@ -47,23 +54,23 @@ const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
                                                                  isLoading,
                                                              }) => {
     const today = new Date();
-    const [currentMonth, setCurrentMonth] = useState(today.getMonth());
-    const [currentYear, setCurrentYear] = useState(today.getFullYear());
-    const [selectedDate, setSelectedDate] = useState(formatDate(today));
-    const [servizioId, setServizioId] = useState(servizioPreselezionato || null);
+    const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
+    const [currentYear, setCurrentYear] = useState<number>(today.getFullYear());
+    const [selectedDate, setSelectedDate] = useState<string>(formatDate(today));
+    const [servizioId, setServizioId] = useState<number | null>(servizioPreselezionato ?? null);
     const [veicoloId, setVeicoloId] = useState<number | null>(null);
     const [fasce, setFasce] = useState<Fascia[]>([]);
-    const [oraInizio, setOraInizio] = useState("");
-    const [isLoadingFasce, setIsLoadingFasce] = useState(false);
-    const [oraFiltro, setOraFiltro] = useState("");
-    const [note, setNote] = useState("");
+    const [oraInizio, setOraInizio] = useState<string>("");
+    const [isLoadingFasce, setIsLoadingFasce] = useState<boolean>(false);
+    const [oraFiltro, setOraFiltro] = useState<string>("");
+    const [note, setNote] = useState<string>("");
 
     useEffect(() => {
         if (selectedDate && servizioId) {
             setIsLoadingFasce(true);
             fetch(`/api/disponibilita/fasce?data=${selectedDate}&servizio_id=${servizioId}`)
                 .then(res => res.json())
-                .then(res => setFasce(res.data || []))
+                .then(res => setFasce(res.data ?? []))
                 .finally(() => setIsLoadingFasce(false));
         } else {
             setFasce([]);
@@ -71,7 +78,7 @@ const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
         }
     }, [selectedDate, servizioId]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!veicoloId || !servizioId || !selectedDate || !oraInizio) return;
         const fascia = fasce.find(f => f.ora_inizio === oraInizio);
@@ -83,6 +90,24 @@ const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
             ora_fine: fascia?.ora_fine,
             note,
         });
+    };
+
+    const handlePrevMonth = () => {
+        if (currentMonth === 0) {
+            setCurrentMonth(11);
+            setCurrentYear(currentYear - 1);
+        } else {
+            setCurrentMonth(currentMonth - 1);
+        }
+    };
+
+    const handleNextMonth = () => {
+        if (currentMonth === 11) {
+            setCurrentMonth(0);
+            setCurrentYear(currentYear + 1);
+        } else {
+            setCurrentMonth(currentMonth + 1);
+        }
     };
 
     return (
@@ -120,16 +145,8 @@ const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
                     month={currentMonth}
                     selectedDate={selectedDate}
                     onSelect={setSelectedDate}
-                    onPrev={() =>
-                        currentMonth === 0
-                            ? (setCurrentMonth(11), setCurrentYear(currentYear - 1))
-                            : setCurrentMonth(currentMonth - 1)
-                    }
-                    onNext={() =>
-                        currentMonth === 11
-                            ? (setCurrentMonth(0), setCurrentYear(currentYear + 1))
-                            : setCurrentMonth(currentMonth + 1)
-                    }
+                    onPrev={handlePrevMonth}
+                    onNext={handleNextMonth}
                     minDate={today}
                 />
             </div>

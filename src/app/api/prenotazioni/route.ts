@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
             SELECT id
             FROM prenotazioni
             WHERE data_prenotazione = ?
+              AND stato != 'rifiutata'
               AND ((ora_inizio <= ? AND ora_fine > ?) OR (ora_inizio < ? AND ora_fine >= ?) OR
                    (ora_inizio >= ? AND ora_fine <= ?))
         `).all(
@@ -90,8 +91,8 @@ export async function POST(request: NextRequest) {
         }
 
         const result = db.prepare(`
-            INSERT INTO prenotazioni (user_id, servizio_id, veicolo_id, data_prenotazione, ora_inizio, ora_fine, note)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO prenotazioni (user_id, servizio_id, veicolo_id, data_prenotazione, ora_inizio, ora_fine, note, stato)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'richiesta')
         `).run(userId, servizio_id, veicolo_id, data_prenotazione, ora_inizio, ora_fine, note || null);
 
         return NextResponse.json({

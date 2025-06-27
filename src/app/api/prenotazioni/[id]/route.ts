@@ -86,66 +86,95 @@ export async function PUT(request: NextRequest) {
                 error: 'Non autorizzato a modificare questa prenotazione'
             }, {status: 403});
         const updateData = await request.json();
-        const {servizio_id, veicolo_id, data_prenotazione, ora_inizio, note} = updateData;
+        const {servizio_id, veicolo_id, data_prenotazione, ora_inizio, note, stato} = updateData;
 
-        if (!user?.is_admin) {
-            // Gli utenti non possono modificare la prenotazione (solo admin)
-            return NextResponse.json({
-                success: false,
-                error: 'Solo gli amministratori possono modificare le prenotazioni'
-            }, {status: 403});
-        } else {
-            let ora_fine = prenotazione.ora_fine;
-            let nuovoServizioId = servizio_id ?? prenotazione.servizio_id;
-            let nuovoOraInizio = ora_inizio ?? prenotazione.ora_inizio;
-            if (servizio_id !== undefined || ora_inizio !== undefined) {
+        // Solo admin può modificare stato
+        if (stato !== undefined) {
+            if (!user?.is_admin) {
+                return NextResponse.json({
+                    success: false,
+                    error: 'Solo gli amministratori possono modificare lo stato'
+                }, {status: 403});
+            }
+            // Solo per prenotazioni future
+            const oggi = new Date();
+            oggi.setHours(0, 0, 0, 0);
+            const dataPren = new Date(prenotazione.data_prenotazione);
+            dataPren.setHours(0, 0, 0, 0);
+            if (dataPren < oggi) {
+                return NextResponse.json({
+                    success: false,
+                    error: 'Non puoi modificare lo stato di prenotazioni passate'
+                }, {status: 400});
+            }
+            if (stato !== 'rifiutata') {
+                // Controllo conflitti con tutte le prenotazioni non rifiutate
+                const nuovoOraInizio = ora_inizio ?? prenotazione.ora_inizio;
+                const nuovoServizioId = servizio_id ?? prenotazione.servizio_id;
                 const servizio = db.prepare('SELECT durata_minuti FROM servizi WHERE id = ?').get(nuovoServizioId) as Servizio;
+                let ora_fine = prenotazione.ora_fine;
                 if (servizio) {
                     const inizioMin = toMin(nuovoOraInizio);
                     ora_fine = toOra(inizioMin + servizio.durata_minuti);
-                    const dataCheck = data_prenotazione ?? prenotazione.data_prenotazione;
-                    const prenotazioniConflitto = db.prepare(`
-                                        SELECT id FROM prenotazioni
-                                        WHERE data_prenotazione = ? AND id != ?
-                                        AND ((ora_inizio < ? AND ora_fine > ?) OR (ora_inizio < ? AND ora_fine > ?) OR (ora_inizio >= ? AND ora_fine <= ?))
-                                    `).all(dataCheck, id, ora_fine, nuovoOraInizio, nuovoOraInizio, ora_fine, nuovoOraInizio, ora_fine);
-                    if (prenotazioniConflitto.length > 0)
-                        return NextResponse.json({
-                            success: false,
-                            error: 'La modifica crea un conflitto con altre prenotazioni'
-                        }, {status: 400});
+                }
+                const dataCheck = data_prenotazione ?? prenotazione.data_prenotazione;
+                const prenotazioniConflitto = db.prepare(`
+                    SELECT id FROM prenotazioni
+                    WHERE data_prenotazione = ? AND id != ? AND stato != 'rifiutata'
+                    AND ((ora_inizio < ? AND ora_fine > ?) OR (ora_inizio < ? AND ora_fine > ?) OR (ora_inizio >= ? AND ora_fine <= ?))
+                `).all(dataCheck, id, ora_fine, nuovoOraInizio, nuovoOraInizio, ora_fine, nuovoOraInizio, ora_fine);
+                if (prenotazioniConflitto.length > 0)
+                    return NextResponse.json({
+                        success: false,
+                        error: 'La modifica crea un conflitto con altre prenotazioni'
+                    }, {status: 400});
+            }
+        }
+
+        let updateFields = [], updateValues = [];
+        if (servizio_id !== undefined) {
+            updateFields.push('servizio_id = ?');
+            updateValues.push(servizio_id);
+        }
+        if (veicolo_id !== undefined) {
+            updateFields.push('veicolo_id = ?');
+            updateValues.push(veicolo_id);
+        }
+        if (data_prenotazione !== undefined) {
+            updateFields.push('data_prenotazione = ?');
+            updateValues.push(data_prenotazione);
+        }
+        if (ora_inizio !== undefined) {
+            updateFields.push('ora_inizio = ?');
+            updateValues.push(ora_inizio);
+        }
+        if (note !== undefined) {
+            updateFields.push('note = ?');
+            updateValues.push(note);
+        }
+        if (stato !== undefined) {
+            updateFields.push('stato = ?');
+            updateValues.push(stato);
+        }
+        // Aggiorna ora_fine se necessario
+        let ora_fine = prenotazione.ora_fine;
+        let nuovoServizioId = servizio_id ?? prenotazione.servizio_id;
+        let nuovoOraInizio = ora_inizio ?? prenotazione.ora_inizio;
+        if (servizio_id !== undefined || ora_inizio !== undefined) {
+            const servizio = db.prepare('SELECT durata_minuti FROM servizi WHERE id = ?').get(nuovoServizioId) as Servizio;
+            if (servizio) {
+                const inizioMin = toMin(nuovoOraInizio);
+                ora_fine = toOra(inizioMin + servizio.durata_minuti);
+                if (ora_fine !== prenotazione.ora_fine) {
+                    updateFields.push('ora_fine = ?');
+                    updateValues.push(ora_fine);
                 }
             }
-            let updateFields = [], updateValues = [];
-            if (servizio_id !== undefined) {
-                updateFields.push('servizio_id = ?');
-                updateValues.push(servizio_id);
-            }
-            if (veicolo_id !== undefined) {
-                updateFields.push('veicolo_id = ?');
-                updateValues.push(veicolo_id);
-            }
-            if (data_prenotazione !== undefined) {
-                updateFields.push('data_prenotazione = ?');
-                updateValues.push(data_prenotazione);
-            }
-            if (ora_inizio !== undefined) {
-                updateFields.push('ora_inizio = ?');
-                updateValues.push(ora_inizio);
-            }
-            if (ora_fine !== prenotazione.ora_fine) {
-                updateFields.push('ora_fine = ?');
-                updateValues.push(ora_fine);
-            }
-            if (note !== undefined) {
-                updateFields.push('note = ?');
-                updateValues.push(note);
-            }
-            if (updateFields.length > 0) {
-                const query = `UPDATE prenotazioni SET ${updateFields.join(', ')} WHERE id = ?`;
-                updateValues.push(id);
-                db.prepare(query).run(...updateValues);
-            }
+        }
+        if (updateFields.length > 0) {
+            const query = `UPDATE prenotazioni SET ${updateFields.join(', ')} WHERE id = ?`;
+            updateValues.push(id);
+            db.prepare(query).run(...updateValues);
         }
         const prenotazioneAggiornata = db.prepare('SELECT * FROM prenotazioni WHERE id = ?').get(id);
         return NextResponse.json({success: true, data: prenotazioneAggiornata});

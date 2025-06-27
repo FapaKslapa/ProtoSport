@@ -1,21 +1,31 @@
 "use client";
 
-import {useState} from "react";
+import {useState, ChangeEvent, FormEvent} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
+import Alert from "@/components/Alert";
+
+type FormData = {
+    nome: string;
+    cognome: string;
+    telefono: string;
+};
+
+type Errors = Record<keyof FormData, string>;
 
 export default function Register() {
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<FormData>({
         nome: "",
         cognome: "",
         telefono: "",
     });
-    const [errors, setErrors] = useState<Record<string, string>>({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [apiError, setApiError] = useState("");
+    const [errors, setErrors] = useState<Partial<Errors>>({});
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [apiError, setApiError] = useState<string>("");
+    const [showAlert, setShowAlert] = useState<boolean>(false);
     const router = useRouter();
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
         setFormData((prev) => ({
             ...prev,
@@ -23,8 +33,8 @@ export default function Register() {
         }));
     };
 
-    const validateForm = () => {
-        const newErrors: Record<string, string> = {};
+    const validateForm = (): boolean => {
+        const newErrors: Partial<Errors> = {};
         if (!formData.nome.trim()) newErrors.nome = "Il nome è obbligatorio";
         if (!formData.cognome.trim()) newErrors.cognome = "Il cognome è obbligatorio";
         if (!formData.telefono.trim()) {
@@ -36,7 +46,7 @@ export default function Register() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setApiError("");
         if (!validateForm()) return;
@@ -52,7 +62,7 @@ export default function Register() {
                     telefono: numeroCompleto,
                 }),
             });
-            const data = await response.json();
+            const data: { error?: string } = await response.json();
             if (!response.ok) {
                 setApiError(data.error || "Errore durante la registrazione");
                 return;
@@ -65,9 +75,20 @@ export default function Register() {
         }
     };
 
+    // Mostra Alert per errori API
+    if (apiError && !showAlert) setShowAlert(true);
+
     return (
         <div className="flex flex-col items-center justify-center min-h-screen w-full relative"
              style={{backgroundColor: "#FA481B"}}>
+            <Alert
+                message={apiError ? {text: apiError, type: "error"} : null}
+                show={showAlert}
+                onClose={() => {
+                    setShowAlert(false);
+                    setTimeout(() => setApiError(""), 400);
+                }}
+            />
             <div className="absolute top-8 left-8 z-10">
                 <Link href="/">
                     <div
@@ -114,11 +135,11 @@ export default function Register() {
                             Numero di telefono
                         </label>
                         <div className="flex">
-                  <span
-                      className="w-1/4 flex items-center justify-center font-bold text-lg text-white select-none bg-white/5 rounded-tl-lg border-0 border-b-2"
-                      style={{borderBottom: "2px solid rgba(255,255,255,0.3)"}}>
-                    +39
-                  </span>
+                                    <span
+                                        className="w-1/4 flex items-center justify-center font-bold text-lg text-white select-none bg-white/5 rounded-tl-lg border-0 border-b-2"
+                                        style={{borderBottom: "2px solid rgba(255,255,255,0.3)"}}>
+                                        +39
+                                    </span>
                             <input
                                 type="tel"
                                 name="telefono"
@@ -141,7 +162,6 @@ export default function Register() {
                         >
                             {isSubmitting ? "Registrazione in corso..." : "Registrati"}
                         </button>
-                        {apiError && <p className="mt-3 text-center text-yellow-200">{apiError}</p>}
                     </div>
                 </form>
                 <p className="mt-8 text-center">

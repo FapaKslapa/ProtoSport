@@ -2,26 +2,34 @@
 
 import {useState, useEffect, useCallback} from "react";
 import {useRouter} from "next/navigation";
-import {FaGoogle, FaMicrosoft, FaApple, FaRegCopy} from "react-icons/fa";
 import Image from "next/image";
 import Cookies from "js-cookie";
-import OrarioCard from "@/app/components/OrarioCard";
-import OrarioForm from "@/app/components/OrarioForm";
-import ServizioCard from "@/app/components/ServizioCard";
-import ServizioForm from "@/app/components/ServizioForm";
-import PrenotazioniAdminModal from "@/app/components/PrenotazioniAdminModal";
+import OrarioCard from "@/components/OrarioCard";
+import OrarioForm from "@/components/OrarioForm";
+import ServizioCard from "@/components/ServizioCard";
+import ServizioForm from "@/components/ServizioForm";
+import PrenotazioniAdminModal from "@/components/PrenotazioniAdminModal";
+import Alert from "@/components/Alert";
+import IcsLinksModal from "@/components/IcsLinksModal";
+import {
+    Servizio,
+    Orario,
+    PrenotazioneAdmin,
+    ModalState,
+    Message
+} from "@/types/admin";
 
 export default function AdminDashboard() {
     const router = useRouter();
 
     const [isLoading, setIsLoading] = useState(true);
-    const [userData, setUserData] = useState<any>(null);
-    const [servizi, setServizi] = useState<any[]>([]);
-    const [orari, setOrari] = useState<any[]>([]);
-    const [prenotazioniAdmin, setPrenotazioniAdmin] = useState<any[]>([]);
+    const [userData, setUserData] = useState<Record<string, unknown> | null>(null);
+    const [servizi, setServizi] = useState<Servizio[]>([]);
+    const [orari, setOrari] = useState<Orario[]>([]);
+    const [prenotazioniAdmin, setPrenotazioniAdmin] = useState<PrenotazioneAdmin[]>([]);
     const [calendarToken, setCalendarToken] = useState<string | null>(null);
 
-    const [modal, setModal] = useState({
+    const [modal, setModal] = useState<ModalState>({
         servizi: false,
         nuovoServizio: false,
         modificaServizio: false,
@@ -33,8 +41,11 @@ export default function AdminDashboard() {
     const [isLoadingServizi, setIsLoadingServizi] = useState(true);
     const [isLoadingPrenotazioniAdmin, setIsLoadingPrenotazioniAdmin] = useState(false);
 
-    const [currentServizio, setCurrentServizio] = useState<any>(null);
+    const [currentServizio, setCurrentServizio] = useState<Servizio | null>(null);
     const [currentGiornoSettimana, setCurrentGiornoSettimana] = useState<number | null>(null);
+
+    const [message, setMessage] = useState<Message | null>(null);
+    const [showAlert, setShowAlert] = useState(false);
 
     const handleLogout = () => {
         Cookies.remove("authToken");
@@ -117,7 +128,18 @@ export default function AdminDashboard() {
         setIsLoading(false);
     }, [router, fetchServizi, fetchOrari, fetchCalendarToken]);
 
-    const handleSaveServizio = async (servizio: any) => {
+    useEffect(() => {
+        if (message) {
+            setShowAlert(true);
+            const timer = setTimeout(() => {
+                setShowAlert(false);
+                setTimeout(() => setMessage(null), 400);
+            }, 3500);
+            return () => clearTimeout(timer);
+        }
+    }, [message]);
+
+    const handleSaveServizio = async (servizio: Omit<Servizio, "id">) => {
         try {
             const response = await fetch("/api/servizi", {
                 method: "POST",
@@ -128,15 +150,18 @@ export default function AdminDashboard() {
             if (data.success) {
                 setModal((m) => ({...m, nuovoServizio: false}));
                 fetchServizi();
+                setMessage({text: "Servizio aggiunto con successo!", type: "success"});
                 return Promise.resolve();
             }
+            setMessage({text: data.error || "Errore durante il salvataggio", type: "error"});
             return Promise.reject(new Error(data.error));
         } catch (error) {
+            setMessage({text: "Errore di connessione", type: "error"});
             return Promise.reject(error);
         }
     };
 
-    const handleUpdateServizio = async (servizio: any) => {
+    const handleUpdateServizio = async (servizio: Servizio) => {
         try {
             const response = await fetch(`/api/servizi/${servizio.id}`, {
                 method: "PUT",
@@ -147,10 +172,13 @@ export default function AdminDashboard() {
             if (data.success) {
                 setModal((m) => ({...m, modificaServizio: false}));
                 fetchServizi();
+                setMessage({text: "Servizio modificato con successo!", type: "success"});
                 return Promise.resolve();
             }
+            setMessage({text: data.error || "Errore durante la modifica", type: "error"});
             return Promise.reject(new Error(data.error));
         } catch (error) {
+            setMessage({text: "Errore di connessione", type: "error"});
             return Promise.reject(error);
         }
     };
@@ -160,68 +188,82 @@ export default function AdminDashboard() {
         try {
             const response = await fetch(`/api/servizi/${id}`, {method: "DELETE"});
             const data = await response.json();
-            if (data.success) fetchServizi();
-            else alert("Errore nell'eliminazione del servizio: " + data.error);
+            if (data.success) {
+                fetchServizi();
+                setMessage({text: "Servizio eliminato con successo!", type: "success"});
+            } else {
+                setMessage({text: "Errore nell'eliminazione del servizio: " + data.error, type: "error"});
+            }
         } catch {
-            alert("Errore di connessione");
+            setMessage({text: "Errore di connessione", type: "error"});
         }
     };
 
-    const handleSaveOrario = async (orario?: any) => {
+    const handleSaveOrario = async (orario?: Omit<Orario, "is_closed">) => {
         try {
             if (!orario) {
+                // Cancellazione orario per il giorno corrente
                 const id = orari.find((o) => o.giorno_settimana === currentGiornoSettimana)?.id;
-                if (id) {
+                if (id !== undefined) {
                     const response = await fetch(`/api/disponibilita/${id}`, {
                         method: "DELETE",
                         headers: {"Content-Type": "application/json"},
                     });
                     const data = await response.json();
-                    if (!data.success) return Promise.reject(new Error(data.error));
+                    if (!data.success) {
+                        setMessage({text: data.error || "Errore durante la modifica dell'orario", type: "error"});
+                        return Promise.reject(new Error(data.error));
+                    }
                 }
-            } else if (orario.id) {
-                const response = await fetch(`/api/disponibilita/${orario.id}`, {
-                    method: "PUT",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({
-                        giorno_settimana: orario.giorno_settimana,
-                        ora_inizio: orario.ora_inizio,
-                        ora_fine: orario.ora_fine,
-                    }),
-                });
-                const data = await response.json();
-                if (!data.success) return Promise.reject(new Error(data.error));
             } else {
-                const response = await fetch("/api/disponibilita", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({
-                        giorno_settimana: orario.giorno_settimana,
-                        ora_inizio: orario.ora_inizio,
-                        ora_fine: orario.ora_fine,
-                    }),
-                });
-                const data = await response.json();
-                if (!data.success) return Promise.reject(new Error(data.error));
+                // Aggiornamento o creazione
+                const existing = orari.find((o) => o.giorno_settimana === orario.giorno_settimana);
+                if (existing && existing.id !== undefined) {
+                    // Update
+                    const response = await fetch(`/api/disponibilita/${existing.id}`, {
+                        method: "PUT",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({
+                            giorno_settimana: orario.giorno_settimana,
+                            ora_inizio: orario.ora_inizio,
+                            ora_fine: orario.ora_fine,
+                        }),
+                    });
+                    const data = await response.json();
+                    if (!data.success) {
+                        setMessage({text: data.error || "Errore durante la modifica dell'orario", type: "error"});
+                        return Promise.reject(new Error(data.error));
+                    }
+                } else {
+                    // Create
+                    const response = await fetch("/api/disponibilita", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({
+                            giorno_settimana: orario.giorno_settimana,
+                            ora_inizio: orario.ora_inizio,
+                            ora_fine: orario.ora_fine,
+                        }),
+                    });
+                    const data = await response.json();
+                    if (!data.success) {
+                        setMessage({text: data.error || "Errore durante la modifica dell'orario", type: "error"});
+                        return Promise.reject(new Error(data.error));
+                    }
+                }
             }
             await fetchOrari();
             setModal((m) => ({...m, modificaOrario: false}));
             setCurrentGiornoSettimana(null);
             return Promise.resolve();
-        } catch (error) {
+        } catch (error: any) {
+            setMessage({text: error?.message || error?.error || "Si è verificato un errore", type: "error"});
             return Promise.reject(error);
         }
     };
-
     const icsUrl = calendarToken
         ? `/api/admin/calendar?token=${calendarToken}`
         : "/api/admin/calendar";
-
-    const handleCopyLink = () => {
-        const url = window.location.origin + icsUrl;
-        navigator.clipboard.writeText(url);
-        alert("Link calendario copiato!");
-    };
 
     if (isLoading) {
         return (
@@ -233,6 +275,15 @@ export default function AdminDashboard() {
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50 pb-16">
+            <Alert
+                message={message}
+                show={showAlert}
+                onClose={() => {
+                    setShowAlert(false);
+                    setTimeout(() => setMessage(null), 400);
+                }}
+            />
+
             <nav className="w-full py-4 px-6 relative" style={{backgroundColor: "#FA481B"}}>
                 <div className="flex justify-between items-center">
                     <div className="flex-1 flex justify-center">
@@ -259,46 +310,61 @@ export default function AdminDashboard() {
                 </div>
             </nav>
 
-            <main className="flex-grow p-4 max-w-7xl mx-auto w-full">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800">Dashboard Admin</h2>
+            <main
+                className="flex-grow mx-auto w-full"
+                style={{
+                    paddingLeft: "4vw",
+                    paddingRight: "4vw",
+                    paddingTop: "24px",
+                    paddingBottom: "16px",
+                    maxWidth: "100vw"
+                }}
+            >
+                <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">Dashboard Admin</h2>
 
-                <div className="mb-8">
-                    <div className="flex justify-between items-center mb-4">
+                <div className="mb-8 w-full">
+                    <div className="flex justify-between items-center mb-4 w-full max-w-5xl mx-auto">
                         <h3 className="text-xl font-semibold text-gray-800">Servizi</h3>
                     </div>
                     {isLoadingServizi ? (
-                        <div className="flex justify-center my-8">
+                        <div className="flex justify-center my-8 w-full">
                             <div
                                 className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
                         </div>
                     ) : (
-                        <div className="flex overflow-x-auto pb-4 w-full max-w-full -mx-4 px-4 items-stretch">
-                            {servizi.map((servizio) => (
-                                <div className="flex-shrink-0 min-w-[320px] max-w-xs w-full mr-4 h-full flex"
-                                     key={servizio.id}>
-                                    <ServizioCard
-                                        servizio={servizio}
-                                        onEdit={(s) => {
-                                            setCurrentServizio(s);
-                                            setModal((m) => ({...m, modificaServizio: true}));
-                                        }}
-                                        onDelete={handleDeleteServizio}
-                                    />
-                                </div>
-                            ))}
+                        <div className="w-full flex justify-center">
+                            <div
+                                className="flex overflow-x-auto pb-4 w-full max-w-full px-4 items-stretch justify-start">
+                                {servizi.map((servizio) => (
+                                    <div
+                                        className="flex-shrink-0 min-w-[320px] max-w-xs w-full mr-4 h-full flex justify-center"
+                                        key={servizio.id}>
+                                        <ServizioCard
+                                            servizio={servizio}
+                                            onEdit={(s) => {
+                                                setCurrentServizio(s);
+                                                setModal((m) => ({...m, modificaServizio: true}));
+                                            }}
+                                            onDelete={handleDeleteServizio}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
 
-                <div className="mb-8">
-                    <h3 className="text-xl font-semibold mb-4 text-gray-800">Orari Settimanali</h3>
-                    <OrarioCard
-                        orari={orari}
-                        onEdit={(giorno) => {
-                            setCurrentGiornoSettimana(giorno);
-                            setModal((m) => ({...m, modificaOrario: true}));
-                        }}
-                    />
+                <div className="mb-8 w-full">
+                    <h3 className="text-xl font-semibold mb-4 text-gray-800 text-center">Orari Settimanali</h3>
+                    <div className="w-full flex justify-center">
+                        <OrarioCard
+                            orari={orari}
+                            onEdit={(giorno) => {
+                                setCurrentGiornoSettimana(giorno);
+                                setModal((m) => ({...m, modificaOrario: true}));
+                            }}
+                        />
+                    </div>
                 </div>
             </main>
 
@@ -368,50 +434,10 @@ export default function AdminDashboard() {
 
                 <div className="absolute left-1/2 -translate-x-1/2 bottom-20 z-50">
                     {modal.icsLinks && (
-                        <div
-                            className="bg-white border border-gray-200 rounded-xl shadow-lg p-6 flex flex-col items-center space-y-4 min-w-[260px]">
-                            <button
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-sm transition"
-                                onClick={handleCopyLink}
-                                type="button"
-                            >
-                                <FaRegCopy className="w-5 h-5"/>
-                                Copia link calendario
-                            </button>
-                            <a
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 hover:bg-green-100 text-green-700 font-semibold text-sm transition"
-                                href={`https://calendar.google.com/calendar/u/0/r?cid=${encodeURIComponent(window.location.origin + icsUrl)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                <FaGoogle className="w-5 h-5"/>
-                                Google Calendar
-                            </a>
-                            <a
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-sm transition"
-                                href={`webcal://${window.location.host}${icsUrl}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                <FaMicrosoft className="w-5 h-5"/>
-                                Outlook
-                            </a>
-                            <a
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold text-sm transition"
-                                href={`webcal://${window.location.host}${icsUrl}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                <FaApple className="w-5 h-5"/>
-                                Apple Calendar
-                            </a>
-                            <button
-                                className="mt-2 text-xs text-gray-500 hover:text-gray-700 transition"
-                                onClick={() => setModal((m) => ({...m, icsLinks: false}))}
-                            >
-                                Chiudi
-                            </button>
-                        </div>
+                        <IcsLinksModal
+                            icsUrl={icsUrl}
+                            onClose={() => setModal((m) => ({...m, icsLinks: false}))}
+                        />
                     )}
                 </div>
             </nav>

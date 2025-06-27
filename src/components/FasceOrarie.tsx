@@ -1,33 +1,42 @@
-import React from "react";
+import React, {ChangeEvent, FC, useMemo} from "react";
 
-interface Fascia {
+type Fascia = {
     ora_inizio: string;
     ora_fine: string;
-}
+};
 
-interface FasceOrarieProps {
+type FasceOrarieProps = {
     fasce: Fascia[];
     selected: string;
     onSelect: (ora: string) => void;
     isLoading: boolean;
     oraFiltro: string;
     setOraFiltro: (ora: string) => void;
-}
+};
 
-const FasceOrarie: React.FC<FasceOrarieProps> = ({
-                                                     fasce,
-                                                     selected,
-                                                     onSelect,
-                                                     isLoading,
-                                                     oraFiltro,
-                                                     setOraFiltro,
-                                                 }) => {
-    const fasceFiltrate = fasce.filter(
-        f =>
-            parseInt(f.ora_inizio.split(":")[1], 10) % 30 === 0 &&
-            (oraFiltro ? f.ora_inizio.startsWith(oraFiltro) : true)
+const getOreDisponibili = (fasce: Fascia[]): string[] =>
+    Array.from(new Set(fasce.map(f => f.ora_inizio.split(":")[0])));
+
+const filtraFasce = (fasce: Fascia[], oraFiltro: string): Fascia[] =>
+    fasce.filter(f =>
+        parseInt(f.ora_inizio.split(":")[1], 10) % 30 === 0 &&
+        (oraFiltro ? f.ora_inizio.startsWith(oraFiltro) : true)
     );
-    const oreDisponibili = Array.from(new Set(fasce.map(f => f.ora_inizio.split(":")[0])));
+
+const FasceOrarie: FC<FasceOrarieProps> = ({
+                                               fasce,
+                                               selected,
+                                               onSelect,
+                                               isLoading,
+                                               oraFiltro,
+                                               setOraFiltro,
+                                           }) => {
+    const oreDisponibili = useMemo(() => getOreDisponibili(fasce), [fasce]);
+    const fasceFiltrate = useMemo(() => filtraFasce(fasce, oraFiltro), [fasce, oraFiltro]);
+
+    const handleFiltroChange = (e: ChangeEvent<HTMLSelectElement>) => {
+        setOraFiltro(e.target.value);
+    };
 
     return (
         <div>
@@ -36,7 +45,7 @@ const FasceOrarie: React.FC<FasceOrarieProps> = ({
                 <select
                     className="border-none bg-gray-100 rounded-lg px-2 py-0.5 text-xs focus:ring-2 focus:ring-red-400"
                     value={oraFiltro}
-                    onChange={e => setOraFiltro(e.target.value)}
+                    onChange={handleFiltroChange}
                 >
                     <option value="">Tutte le ore</option>
                     {oreDisponibili.map(ora => (
@@ -58,14 +67,16 @@ const FasceOrarie: React.FC<FasceOrarieProps> = ({
                             key={f.ora_inizio}
                             type="button"
                             className={`w-full px-1.5 py-1 rounded-lg border text-xs font-semibold transition-all duration-150 shadow-sm flex flex-col items-center
-                                                                                     ${selected === f.ora_inizio
+                                                                      ${selected === f.ora_inizio
                                 ? "bg-red-500 text-white border-red-500 shadow-md scale-105 ring-2 ring-red-300"
                                 : "bg-white text-gray-900 border-gray-200 hover:border-red-400 hover:bg-red-50"}
-                                                                                     focus:outline-none focus:ring-2 focus:ring-red-400`}
+                                                                      focus:outline-none focus:ring-2 focus:ring-red-400`}
                             onClick={() => onSelect(f.ora_inizio)}
                         >
-                            <span className="font-bold tracking-wide">{f.ora_inizio} <span
-                                className="mx-1 text-gray-300">-</span> {f.ora_fine}</span>
+                                                                  <span className="font-bold tracking-wide">
+                                                                      {f.ora_inizio} <span
+                                                                      className="mx-1 text-gray-300">-</span> {f.ora_fine}
+                                                                  </span>
                         </button>
                     ))}
                 </div>
