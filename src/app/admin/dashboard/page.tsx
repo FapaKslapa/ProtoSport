@@ -2,7 +2,6 @@
 
 import {useState, useEffect, useCallback} from "react";
 import {useRouter} from "next/navigation";
-import Image from "next/image";
 import Cookies from "js-cookie";
 import OrarioCard from "@/components/OrarioCard";
 import OrarioForm from "@/components/OrarioForm";
@@ -123,10 +122,14 @@ export default function AdminDashboard() {
             } catch {
             }
         }
-        fetchServizi();
-        fetchOrari();
-        fetchCalendarToken();
-        setIsLoading(false);
+        (async () => {
+            await Promise.all([
+                fetchServizi(),
+                fetchOrari(),
+                fetchCalendarToken()
+            ]);
+            setIsLoading(false);
+        })();
     }, [router, fetchServizi, fetchOrari, fetchCalendarToken]);
 
     useEffect(() => {
@@ -150,7 +153,7 @@ export default function AdminDashboard() {
             const data = await response.json();
             if (data.success) {
                 setModal((m) => ({...m, nuovoServizio: false}));
-                fetchServizi();
+                await fetchServizi();
                 setMessage({text: "Servizio aggiunto con successo!", type: "success"});
                 return Promise.resolve();
             }
@@ -172,7 +175,7 @@ export default function AdminDashboard() {
             const data = await response.json();
             if (data.success) {
                 setModal((m) => ({...m, modificaServizio: false}));
-                fetchServizi();
+                await fetchServizi();
                 setMessage({text: "Servizio modificato con successo!", type: "success"});
                 return Promise.resolve();
             }
@@ -190,7 +193,7 @@ export default function AdminDashboard() {
             const response = await fetch(`/api/servizi/${id}`, {method: "DELETE"});
             const data = await response.json();
             if (data.success) {
-                fetchServizi();
+                await fetchServizi();
                 setMessage({text: "Servizio eliminato con successo!", type: "success"});
             } else {
                 setMessage({text: "Errore nell'eliminazione del servizio: " + data.error, type: "error"});
@@ -297,7 +300,7 @@ export default function AdminDashboard() {
                     maxWidth: "100vw"
                 }}
             >
-                <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">Dashboard Admin</h2>
+                <h2 className="text-2xl font-bold mb-6 text-gray-800 text-left">Dashboard Admin</h2>
 
                 <div className="mb-8 w-full">
                     <div className="flex justify-between items-center mb-4 w-full max-w-5xl mx-auto">
@@ -332,7 +335,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="mb-8 w-full">
-                    <h3 className="text-xl font-semibold mb-4 text-gray-800 text-center">Orari Settimanali</h3>
+                    <h3 className="text-xl font-semibold mb-4 text-gray-800 text-left">Orari Settimanali</h3>
                     <div className="w-full flex justify-center">
                         <OrarioCard
                             orari={orari}
@@ -361,7 +364,7 @@ export default function AdminDashboard() {
                     <button
                         className="text-gray-600 flex flex-col items-center justify-center"
                         onClick={() => {
-                            fetchPrenotazioniAdmin();
+                            void fetchPrenotazioniAdmin();
                             setModal((m) => ({...m, prenotazioni: true}));
                         }}
                     >
@@ -413,6 +416,7 @@ export default function AdminDashboard() {
             {modal.icsLinks && (
                 <IcsLinksModal
                     icsUrl={icsUrl}
+                    isOpen={modal.icsLinks}
                     onClose={() => setModal((m) => ({...m, icsLinks: false}))}
                 />
             )}

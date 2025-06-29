@@ -2,7 +2,6 @@
 
 import {useState, useEffect, useCallback} from "react";
 import {useRouter} from "next/navigation";
-import Image from "next/image";
 import Cookies from "js-cookie";
 import AdminCard from "@/components/AdminCard";
 import AdminForm from "@/components/AdminForm";
@@ -547,6 +546,7 @@ export default function SuperAdminDashboard() {
             {modal.icsLinks && (
                 <IcsLinksModal
                     icsUrl={icsUrl}
+                    isOpen={modal.icsLinks}
                     onClose={() => setModal((m) => ({...m, icsLinks: false}))}
                 />
             )}

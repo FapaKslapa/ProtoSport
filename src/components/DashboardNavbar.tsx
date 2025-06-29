@@ -7,7 +7,8 @@ type DashboardNavbarProps = {
 export default function DashboardNavbar({onLogout}: DashboardNavbarProps) {
     return (
         <nav
-            className="w-full py-4 px-6 fixed top-0 left-0 right-0 z-50"
+            id="dashboard-navbar"
+            className="w-full py-4 px-6"
             style={{backgroundColor: "#FA481B"}}
         >
             <div className="flex justify-between items-center">

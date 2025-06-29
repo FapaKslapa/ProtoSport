@@ -1,5 +1,5 @@
 import React from "react";
-import { format, isSameDay } from "date-fns";
+import { format } from "date-fns";
 
 interface CalendarDayCellProps {
     day: Date;

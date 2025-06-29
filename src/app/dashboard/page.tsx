@@ -2,7 +2,6 @@
 
 import {useState, useEffect} from "react";
 import {useRouter} from "next/navigation";
-import Image from "next/image";
 import Cookies from "js-cookie";
 import VeicoloForm from "@/components/VeicoloForm";
 import VeicoloCard from "@/components/VeicoloCard";
@@ -11,6 +10,7 @@ import PrenotazioneModal from "@/components/PrenotazioneModal";
 import PrenotazioniUtenteModal from "@/components/PrenotazioneUtenteModal";
 import StoricoPrenotazioniModal from "@/components/StoricoPrenotazioniModal";
 import Alert from "@/components/Alert";
+import IcsLinksModal from "@/components/IcsLinksModal";
 import {
     Veicolo,
     Servizio,
@@ -48,7 +48,7 @@ export default function Dashboard() {
 
     const [showPrenotazioni, setShowPrenotazioni] = useState(false);
     const [prenotazioni, setPrenotazioni] = useState<PrenotazioneUtente[]>([]);
-    const [isLoadingPrenotazioni, setIsLoadingPrenotazioni] = useState(false);
+    const [, setIsLoadingPrenotazioni] = useState(false);
 
     const [editVeicolo, setEditVeicolo] = useState<Veicolo | null>(null);
     const [deleteVeicoloId, setDeleteVeicoloId] = useState<number | null>(null);
@@ -58,15 +58,23 @@ export default function Dashboard() {
     const [storicoPrenotazioni, setStoricoPrenotazioni] = useState<PrenotazioneUtente[]>([]);
     const [isLoadingStorico, setIsLoadingStorico] = useState(false);
 
+    // Stato per la modale ICS
+    const [showIcsModal, setShowIcsModal] = useState(false);
+    const [icsUrl, setIcsUrl] = useState<string>("");
+
     useEffect(() => {
         const token = Cookies.get("authToken");
         if (!token) {
             router.push("/login");
             return;
         }
-        fetchVeicoli();
-        fetchServizi();
-        setIsLoading(false);
+        const fetchData = async () => {
+            await fetchVeicoli();
+            await fetchServizi();
+            setIsLoading(false);
+        };
+        fetchData().catch(() => {
+        });
     }, [router]);
 
     const fetchVeicoli = async () => {
@@ -176,7 +184,7 @@ export default function Dashboard() {
             if (data.success) {
                 setMessage({text: "Veicolo aggiunto con successo!", type: "success"});
                 setShowModal(false);
-                fetchVeicoli();
+                await fetchVeicoli();
             } else {
                 setMessage({text: data.error || data.message || "Errore durante il salvataggio", type: "error"});
             }
@@ -201,7 +209,7 @@ export default function Dashboard() {
             if (data.success) {
                 setMessage({text: "Veicolo modificato con successo!", type: "success"});
                 setEditVeicolo(null);
-                fetchVeicoli();
+                await fetchVeicoli();
             } else {
                 setMessage({text: data.message || "Errore durante la modifica", type: "error"});
             }
@@ -224,7 +232,7 @@ export default function Dashboard() {
             if (data.success) {
                 setMessage({text: "Veicolo eliminato con successo!", type: "success"});
                 setDeleteVeicoloId(null);
-                fetchVeicoli();
+                await fetchVeicoli();
             } else {
                 setMessage({text: data.message || "Errore durante l'eliminazione", type: "error"});
             }
@@ -294,6 +302,12 @@ export default function Dashboard() {
         } finally {
             setIsPrenotazioneLoading(false);
         }
+    };
+
+    // Funzione per mostrare la modale ICS (puoi chiamarla dove serve, qui esempio con bottone)
+    const openIcsModal = (url: string) => {
+        setIcsUrl(url);
+        setShowIcsModal(true);
     };
 
     if (isLoading) {
@@ -378,6 +392,17 @@ export default function Dashboard() {
                         <p>Nessun servizio disponibile al momento.</p>
                     </div>
                 )}
+
+                {/* Esempio di bottone per aprire la modale ICS */}
+                <div className="mt-8 flex justify-center">
+                    <button
+                        className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
+                        onClick={() => openIcsModal("/api/calendar.ics")}
+                        type="button"
+                    >
+                        Collega il tuo calendario
+                    </button>
+                </div>
             </main>
 
             <nav className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200 h-16 px-4 z-40">
@@ -393,7 +418,7 @@ export default function Dashboard() {
                     <button
                         disabled={isLoadingVeicoli || isLoadingServizi}
                         onClick={() => {
-                            fetchPrenotazioni();
+                            void fetchPrenotazioni();
                             setShowPrenotazioni(true);
                         }}
                         className="text-gray-600 flex flex-col items-center justify-center"
@@ -417,7 +442,7 @@ export default function Dashboard() {
                     </button>
                     <button
                         onClick={() => {
-                            fetchStoricoPrenotazioni();
+                            void fetchStoricoPrenotazioni();
                             setShowStorico(true);
                         }}
                         className="text-gray-600 flex flex-col items-center justify-center"
@@ -522,6 +547,13 @@ export default function Dashboard() {
                 isOpen={showStorico}
                 onClose={() => setShowStorico(false)}
                 isLoading={isLoadingStorico}
+            />
+
+            {/* Modale ICS */}
+            <IcsLinksModal
+                icsUrl={icsUrl}
+                isOpen={showIcsModal}
+                onClose={() => setShowIcsModal(false)}
             />
         </div>
     );
