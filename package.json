@@ -1,5 +1,5 @@
 {
-  "name": "prova",
+  "name": "protosport",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -14,17 +14,21 @@
     "better-sqlite3": "^12.1.0",
     "csv-parse": "^5.6.0",
     "date-fns": "^4.1.0",
+    "file-saver": "^2.0.5",
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "next": "15.3.4",
     "react": "^19.0.0",
     "react-datepicker": "^8.4.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "recharts": "^3.0.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/bcrypt": "^5.0.2",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/file-saver": "^2.0.7",
     "@types/js-cookie": "^3.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",

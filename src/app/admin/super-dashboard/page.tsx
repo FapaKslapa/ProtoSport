@@ -91,7 +91,7 @@ export default function SuperAdminDashboard() {
             setAlertMsg({text: `Admin ${adminData.id ? "aggiornato" : "creato"} con successo!`, type: "success"});
             setShowAdminModal(false);
             setEditingAdmin(null);
-            fetchAdmins();
+            await fetchAdmins();
         } catch (e) {
             setAlertMsg({
                 text: e instanceof Error ? e.message : "Errore durante il salvataggio dell'admin",
@@ -111,7 +111,7 @@ export default function SuperAdminDashboard() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Errore durante l'eliminazione dell'admin");
             setAlertMsg({text: "Admin eliminato con successo!", type: "success"});
-            fetchAdmins();
+            await fetchAdmins();
         } catch (e) {
             setAlertMsg({
                 text: e instanceof Error ? e.message : "Errore durante l'eliminazione dell'admin",
@@ -202,29 +202,33 @@ export default function SuperAdminDashboard() {
     }, []);
 
     useEffect(() => {
-        const token = Cookies.get("adminAuthToken");
-        if (!token) {
-            router.push("/admin-login");
-            return;
-        }
-        const userData = Cookies.get("adminUserData");
-        if (userData) {
-            try {
-                const parsedUser = JSON.parse(userData);
-                if (!parsedUser.is_super_admin) {
-                    router.push("/admin/dashboard");
+        const init = async () => {
+            const token = Cookies.get("adminAuthToken");
+            if (!token) {
+                router.push("/admin-login");
+                return;
+            }
+            const userData = Cookies.get("adminUserData");
+            if (userData) {
+                try {
+                    const parsedUser = JSON.parse(userData);
+                    if (!parsedUser.is_super_admin) {
+                        router.push("/admin/dashboard");
+                        return;
+                    }
+                    setUser(parsedUser);
+                    await fetchAdmins();
+                } catch {
+                    router.push("/admin-login");
                     return;
                 }
-                setUser(parsedUser);
-                fetchAdmins();
-            } catch {
-                router.push("/admin-login");
             }
-        }
-        fetchServizi();
-        fetchOrari();
-        fetchCalendarToken();
-        setIsLoading(false);
+            await fetchServizi();
+            await fetchOrari();
+            await fetchCalendarToken();
+            setIsLoading(false);
+        };
+        void init();
     }, [router, fetchAdmins, fetchServizi, fetchOrari, fetchCalendarToken]);
 
     useEffect(() => {
@@ -287,7 +291,7 @@ export default function SuperAdminDashboard() {
             const data = await response.json();
             if (data.success) {
                 setModal((m) => ({...m, modificaServizio: false}));
-                fetchServizi();
+                await fetchServizi();
                 setMessage({text: "Servizio modificato con successo!", type: "success"});
                 return Promise.resolve();
             }
@@ -308,7 +312,7 @@ export default function SuperAdminDashboard() {
             });
             const data = await response.json();
             if (data.success) {
-                fetchServizi();
+                await fetchServizi();
                 setMessage({text: "Servizio eliminato con successo!", type: "success"});
             } else {
                 setMessage({text: "Errore nell'eliminazione del servizio: " + data.error, type: "error"});
@@ -585,7 +589,7 @@ export default function SuperAdminDashboard() {
                     <button
                         className="text-gray-600 flex flex-col items-center justify-center"
                         onClick={() => {
-                            fetchPrenotazioniAdmin();
+                            void fetchPrenotazioniAdmin();
                             setModal((m) => ({...m, prenotazioni: true}));
                         }}
                     >
@@ -611,6 +615,19 @@ export default function SuperAdminDashboard() {
                                   d="M13.5 13a2.5 2.5 0 00-3.5 0l-2 2a2.5 2.5 0 003.5 3.5l.5-.5"/>
                         </svg>
                         <span className="text-xs mt-1">Connetti</span>
+                    </button>
+                    <button
+                        className="text-gray-600 flex flex-col items-center justify-center"
+                        onClick={() => router.push("/admin/super-dashboard/statistiche")}
+                        aria-label="Statistiche"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24"
+                             stroke="currentColor">
+                            <rect x="3" y="13" width="3" height="8" rx="1" fill="currentColor"/>
+                            <rect x="9" y="9" width="3" height="12" rx="1" fill="currentColor"/>
+                            <rect x="15" y="5" width="3" height="16" rx="1" fill="currentColor"/>
+                        </svg>
+                        <span className="text-xs mt-1 font-medium">Statistiche</span>
                     </button>
                 </div>
             </nav>

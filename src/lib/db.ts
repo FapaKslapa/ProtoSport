@@ -25,12 +25,13 @@ export function initDb() {
             CREATE TABLE users
             (
                 id             INTEGER PRIMARY KEY AUTOINCREMENT,
-                nome           TEXT              NOT NULL,
-                cognome        TEXT              NOT NULL,
-                telefono       TEXT              NOT NULL UNIQUE,
-                is_admin       BOOLEAN DEFAULT 0 NOT NULL,
-                is_super_admin BOOLEAN DEFAULT 0 NOT NULL,
-                password       TEXT
+                nome           TEXT                NOT NULL,
+                cognome        TEXT                NOT NULL,
+                telefono       TEXT                NOT NULL UNIQUE,
+                is_admin       BOOLEAN   DEFAULT 0 NOT NULL,
+                is_super_admin BOOLEAN   DEFAULT 0 NOT NULL,
+                password       TEXT,
+                data_creazione TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
             CREATE TABLE veicoli
@@ -78,7 +79,7 @@ export function initDb() {
                 ora_fine          TIME    NOT NULL,
                 note              TEXT,
                 stato             TEXT    NOT NULL DEFAULT 'richiesta', -- nuovo campo
-                data_creazione    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                data_creazione    TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
                 FOREIGN KEY (veicolo_id) REFERENCES veicoli (id) ON DELETE CASCADE,
                 FOREIGN KEY (servizio_id) REFERENCES servizi (id) ON DELETE CASCADE,
