@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect, useRef} from "react";
 
 interface ModalProps {
     isOpen: boolean;
@@ -23,19 +23,37 @@ const Modal: React.FC<ModalProps> = ({
                                          title,
                                          style
                                      }) => {
+    const backdropRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            const originalOverflow = document.body.style.overflow;
+            document.body.style.overflow = "hidden";
+            return () => {
+                document.body.style.overflow = originalOverflow;
+            };
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
+    // Chiudi solo se il click è sul backdrop
+    const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (e.target === backdropRef.current) {
+            onClose();
+        }
+    };
+
     return (
-        <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
-            {/* Overlay senza blur */}
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
             <div
-                className="absolute inset-0"
-                style={{background: "transparent", ...style}}
-                onClick={onClose}
+                ref={backdropRef}
+                className="absolute inset-0 pointer-events-auto"
+                style={{...style}}
+                onClick={handleBackdropClick}
             />
-            {/* Modal con ombra marcata */}
             <div
-                className={`bg-white p-6 rounded-t-3xl w-full ${maxWidth} max-h-[92vh] overflow-y-auto border border-gray-200 pointer-events-auto z-10 animate-slideUp ${className}`}
+                className={`bg-white p-6 rounded-t-3xl w-full ${maxWidth} max-h-[92vh] overflow-y-auto border border-gray-200 pointer-events-auto z-10 slide-up ${className}`}
                 style={{
                     boxShadow: "0 8px 40px 0 rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10)",
                     ...style
@@ -62,20 +80,6 @@ const Modal: React.FC<ModalProps> = ({
                 )}
                 {children}
             </div>
-            <style jsx>{`
-                @keyframes slideUp {
-                    from {
-                        transform: translateY(100%);
-                    }
-                    to {
-                        transform: translateY(0);
-                    }
-                }
-
-                .animate-slideUp {
-                    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                }
-            `}</style>
         </div>
     );
 };

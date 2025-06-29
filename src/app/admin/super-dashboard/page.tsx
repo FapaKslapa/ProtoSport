@@ -139,7 +139,9 @@ export default function SuperAdminDashboard() {
 
     const fetchCalendarToken = useCallback(async () => {
         try {
-            const res = await fetch("/api/admin/calendar-token");
+            const res = await fetch("/api/admin/calendar-token", {
+                headers: {Authorization: `Bearer ${Cookies.get("adminAuthToken")}`},
+            });
             const data = await res.json();
             if (data.success) setCalendarToken(data.token);
         } catch {

@@ -258,7 +258,6 @@ export default function Dashboard() {
             servizioId: data.servizio_id,
             data: data.data_prenotazione,
             ora: data.ora_inizio,
-            // Puoi aggiungere note o ora_fine se servono
         });
     };
 
@@ -267,13 +266,20 @@ export default function Dashboard() {
         servizioId: number;
         data: string;
         ora: string;
+        note?: string;
     }) => {
         setIsPrenotazioneLoading(true);
         try {
             const res = await fetch("/api/prenotazioni", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(prenotazione),
+                body: JSON.stringify({
+                    veicolo_id: prenotazione.veicoloId,
+                    servizio_id: prenotazione.servizioId,
+                    data_prenotazione: prenotazione.data,
+                    ora_inizio: prenotazione.ora,
+                    note: prenotazione.note || ""
+                }),
             });
             const data = await res.json();
             if (data.success) {
