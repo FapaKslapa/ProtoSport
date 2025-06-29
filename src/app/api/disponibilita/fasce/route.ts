@@ -1,6 +1,20 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {getDb} from '@/lib/db';
 
+interface Servizio {
+    durata_minuti: number;
+}
+
+interface Disponibilita {
+    ora_inizio: string;
+    ora_fine: string;
+}
+
+interface Prenotazione {
+    ora_inizio: string;
+    ora_fine: string;
+}
+
 function toMin(ora: string) {
     const [h, m] = ora.split(':').map(Number);
     return h * 60 + m;
@@ -23,21 +37,21 @@ export async function GET(request: NextRequest) {
         const db = getDb();
         const giornoSettimana = new Date(data).getDay();
         const disponibilita = db.prepare('SELECT ora_inizio, ora_fine FROM disponibilita WHERE giorno_settimana = ?')
-            .get(giornoSettimana);
+            .get(giornoSettimana) as Disponibilita | undefined;
         if (!disponibilita)
             return NextResponse.json({success: true, data: []});
 
-        const servizio = db.prepare('SELECT durata_minuti FROM servizi WHERE id = ?').get(servizioId);
+        const servizio = db.prepare('SELECT durata_minuti FROM servizi WHERE id = ?').get(servizioId) as Servizio | undefined;
         if (!servizio)
             return NextResponse.json({success: false, error: 'Servizio non trovato'}, {status: 404});
         const durata = servizio.durata_minuti;
 
         const prenotazioni = db.prepare(`
-                                SELECT ora_inizio, ora_fine
-                                FROM prenotazioni
-                                WHERE data_prenotazione = ?
-                                ORDER BY ora_inizio
-                            `).all(data);
+                SELECT ora_inizio, ora_fine
+                FROM prenotazioni
+                WHERE data_prenotazione = ?
+                ORDER BY ora_inizio
+            `).all(data) as Prenotazione[];
 
         const apertura = toMin(disponibilita.ora_inizio);
         const chiusura = toMin(disponibilita.ora_fine);

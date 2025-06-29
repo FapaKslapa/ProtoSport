@@ -244,6 +244,24 @@ export default function Dashboard() {
         setShowPrenotaModal(true);
     };
 
+    // Funzione wrapper per adattare i dati per PrenotazioneModal
+    const handleSavePrenotazioneWrapper = async (data: {
+        veicolo_id: number;
+        servizio_id: number;
+        data_prenotazione: string;
+        ora_inizio: string;
+        ora_fine?: string;
+        note: string;
+    }) => {
+        await handleSavePrenotazione({
+            veicoloId: data.veicolo_id,
+            servizioId: data.servizio_id,
+            data: data.data_prenotazione,
+            ora: data.ora_inizio,
+            // Puoi aggiungere note o ora_fine se servono
+        });
+    };
+
     const handleSavePrenotazione = async (prenotazione: {
         veicoloId: number;
         servizioId: number;
@@ -403,6 +421,7 @@ export default function Dashboard() {
                         <span className="text-xs mt-1">Prenotazioni</span>
                     </button>
                     <button
+                        disabled={isLoadingVeicoli}
                         onClick={() => setShowModal(true)}
                         className="bg-red-600 text-white rounded-full h-14 w-14 flex items-center justify-center shadow-lg transform -translate-y-3"
                     >
@@ -439,57 +458,20 @@ export default function Dashboard() {
             </nav>
 
             {/* Modale aggiunta veicolo */}
-            {showModal && (
-                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
-                    <div
-                        className="bg-white p-6 rounded-t-3xl w-full max-w-md max-h-[90vh] overflow-y-auto pointer-events-auto z-10 shadow-2xl bottom-0"
-                        style={{
-                            transition: "box-shadow 0.3s ease-out",
-                            animation: "slideUp 0.3s ease-out",
-                            boxShadow: "0 -10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 40px 0 rgba(0,0,0,0.25)"
-                        }}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-black">Aggiungi un nuovo veicolo</h2>
-                            <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                                     viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                          d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <VeicoloForm onSave={handleSaveVeicolo}/>
-                    </div>
-                </div>
-            )}
+            <VeicoloForm
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                onSave={handleSaveVeicolo}
+            />
 
             {/* Modale modifica veicolo */}
             {editVeicolo && (
-                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
-                    <div
-                        className="bg-white p-6 rounded-t-3xl w-full max-w-md max-h-[90vh] overflow-y-auto pointer-events-auto z-10 shadow-2xl bottom-0"
-                        style={{
-                            transition: "box-shadow 0.3s ease-out",
-                            animation: "slideUp 0.3s ease-out",
-                            boxShadow: "0 -10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 40px 0 rgba(0,0,0,0.25)"
-                        }}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-black">Modifica veicolo</h2>
-                            <button onClick={() => setEditVeicolo(null)} className="text-gray-500 hover:text-gray-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                                     viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                          d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <VeicoloForm
-                            onSave={handleUpdateVeicolo}
-                            initialData={editVeicolo}
-                            onCancel={() => setEditVeicolo(null)}
-                        />
-                    </div>
-                </div>
+                <VeicoloForm
+                    isOpen={!!editVeicolo}
+                    onClose={() => setEditVeicolo(null)}
+                    onSave={handleUpdateVeicolo}
+                    initialData={editVeicolo}
+                />
             )}
 
             {/* Popup conferma eliminazione */}
@@ -535,44 +517,15 @@ export default function Dashboard() {
             )}
 
             {/* Modale prenotazione */}
-            {showPrenotaModal && (
-                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
-                    <div
-                        className="bg-white p-4 rounded-t-3xl w-full max-w-lg max-h-[95vh] overflow-y-auto pointer-events-auto z-10 shadow-2xl bottom-0"
-                        style={{
-                            transition: "box-shadow 0.3s ease-out",
-                            animation: "slideUp 0.3s ease-out",
-                            boxShadow: "0 -10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 40px 0 rgba(0,0,0,0.25)"
-                        }}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-black">Prenota Servizio</h2>
-                            <button onClick={() => setShowPrenotaModal(false)}
-                                    className="text-gray-500 hover:text-gray-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                                     viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                          d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                        {isPrenotazioneLoading ? (
-                            <div className="flex justify-center py-10">
-                                <div
-                                    className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
-                            </div>
-                        ) : (
-                            <PrenotazioneModal
-                                veicoli={veicoli}
-                                servizi={servizi}
-                                servizioPreselezionato={selectedServizio || undefined}
-                                onSave={handleSavePrenotazione}
-                                onCancel={() => setShowPrenotaModal(false)}
-                                isLoading={isPrenotazioneLoading}
-                            />
-                        )}
-                    </div>
-                </div>
-            )}
+            <PrenotazioneModal
+                isOpen={showPrenotaModal}
+                veicoli={veicoli}
+                servizi={servizi}
+                servizioPreselezionato={selectedServizio || undefined}
+                onSave={handleSavePrenotazioneWrapper}
+                onClose={() => setShowPrenotaModal(false)}
+                isLoading={isPrenotazioneLoading}
+            />
 
             <PrenotazioniUtenteModal
                 prenotazioni={prenotazioni}

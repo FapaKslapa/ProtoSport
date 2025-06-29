@@ -24,7 +24,6 @@ body {
     font-family: 'Inter', sans-serif;
 }
 
-/* Animazioni per il popup */
 @keyframes slideUp {
     from {
         transform: translateY(100%);
@@ -38,43 +37,14 @@ body {
     animation: slideUp 0.5s ease-out forwards;
 }
 
-/* Rimuovi l'impostazione globale z-index per i button */
 button {
     position: relative;
 }
 
-/* Garantisci che i pulsanti nel modal abbiano z-index superiore */
 .z-50 button {
     z-index: 51;
 }
 
-input[type="tel"] {
-    border: none;
-    border-bottom: 4px solid #fff;
-    border-radius: 0;
-    outline: none;
-    background: transparent;
-}
-
-input[type="tel"]:focus {
-    border: none;
-    border-bottom: 4px solid #fff;
-    outline: none;
-}
-
-input[type="tel"] {
-    border: none;
-    border-bottom: 2px solid #a3a3a3;
-    border-radius: 0;
-    outline: none;
-    background: transparent;
-}
-
-input[type="tel"]:focus {
-    border: none;
-    border-bottom: 2px solid #a3a3a3;
-    outline: none;
-}
 
 .p {
     font-size: 1.2rem;

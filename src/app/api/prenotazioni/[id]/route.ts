@@ -5,6 +5,7 @@ import {verifyToken} from '@/lib/auth';
 interface User {
     id: number;
     is_admin: boolean;
+    is_super_admin: boolean;
 }
 
 interface Prenotazione {
@@ -35,9 +36,9 @@ export async function GET(request: NextRequest) {
         const userId = verifyToken(request);
         if (!userId) return NextResponse.json({success: false, error: 'Non autorizzato'}, {status: 401});
         const db = getDb();
-        const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(userId) as User;
+        const user = db.prepare('SELECT is_admin, is_super_admin FROM users WHERE id = ?').get(userId) as User;
         let prenotazione;
-        if (user?.is_admin) {
+        if (user?.is_admin || user?.is_super_admin) {
             prenotazione = db.prepare(`
                 SELECT p.*,
                        u.nome    as user_nome,
@@ -77,10 +78,10 @@ export async function PUT(request: NextRequest) {
         const userId = verifyToken(request);
         if (!userId) return NextResponse.json({success: false, error: 'Non autorizzato'}, {status: 401});
         const db = getDb();
-        const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(userId) as User;
+        const user = db.prepare('SELECT is_admin, is_super_admin FROM users WHERE id = ?').get(userId) as User;
         const prenotazione = db.prepare('SELECT * FROM prenotazioni WHERE id = ?').get(id) as Prenotazione;
         if (!prenotazione) return NextResponse.json({success: false, error: 'Prenotazione non trovata'}, {status: 404});
-        if (prenotazione.user_id !== userId && !user?.is_admin)
+        if (prenotazione.user_id !== userId && !user?.is_admin && !user?.is_super_admin)
             return NextResponse.json({
                 success: false,
                 error: 'Non autorizzato a modificare questa prenotazione'
@@ -88,9 +89,9 @@ export async function PUT(request: NextRequest) {
         const updateData = await request.json();
         const {servizio_id, veicolo_id, data_prenotazione, ora_inizio, note, stato} = updateData;
 
-        // Solo admin può modificare stato
+        // Solo admin o superadmin può modificare stato
         if (stato !== undefined) {
-            if (!user?.is_admin) {
+            if (!user?.is_admin && !user?.is_super_admin) {
                 return NextResponse.json({
                     success: false,
                     error: 'Solo gli amministratori possono modificare lo stato'
@@ -119,9 +120,11 @@ export async function PUT(request: NextRequest) {
                 }
                 const dataCheck = data_prenotazione ?? prenotazione.data_prenotazione;
                 const prenotazioniConflitto = db.prepare(`
-                    SELECT id FROM prenotazioni
-                    WHERE data_prenotazione = ? AND id != ? AND stato != 'rifiutata'
-                    AND ((ora_inizio < ? AND ora_fine > ?) OR (ora_inizio < ? AND ora_fine > ?) OR (ora_inizio >= ? AND ora_fine <= ?))
+                    SELECT id
+                    FROM prenotazioni
+                    WHERE data_prenotazione = ?
+                      AND id != ? AND stato != 'rifiutata'
+                        AND ((ora_inizio < ? AND ora_fine > ?) OR (ora_inizio < ? AND ora_fine > ?) OR (ora_inizio >= ? AND ora_fine <= ?))
                 `).all(dataCheck, id, ora_fine, nuovoOraInizio, nuovoOraInizio, ora_fine, nuovoOraInizio, ora_fine);
                 if (prenotazioniConflitto.length > 0)
                     return NextResponse.json({
@@ -172,7 +175,9 @@ export async function PUT(request: NextRequest) {
             }
         }
         if (updateFields.length > 0) {
-            const query = `UPDATE prenotazioni SET ${updateFields.join(', ')} WHERE id = ?`;
+            const query = `UPDATE prenotazioni
+                           SET ${updateFields.join(', ')}
+                           WHERE id = ?`;
             updateValues.push(id);
             db.prepare(query).run(...updateValues);
         }
@@ -192,10 +197,10 @@ export async function DELETE(request: NextRequest) {
         const userId = verifyToken(request);
         if (!userId) return NextResponse.json({success: false, error: 'Non autorizzato'}, {status: 401});
         const db = getDb();
-        const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(userId) as User;
+        const user = db.prepare('SELECT is_admin, is_super_admin FROM users WHERE id = ?').get(userId) as User;
         const prenotazione = db.prepare('SELECT * FROM prenotazioni WHERE id = ?').get(id);
         if (!prenotazione) return NextResponse.json({success: false, error: 'Prenotazione non trovata'}, {status: 404});
-        if (!user?.is_admin)
+        if (!user?.is_admin && !user?.is_super_admin)
             return NextResponse.json({
                 success: false,
                 error: 'Solo gli amministratori possono eliminare le prenotazioni'

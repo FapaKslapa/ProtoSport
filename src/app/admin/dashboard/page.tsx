@@ -431,94 +431,43 @@ export default function AdminDashboard() {
                         <span className="text-xs mt-1">Profilo</span>
                     </button>
                 </div>
-
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-20 z-50">
-                    {modal.icsLinks && (
-                        <IcsLinksModal
-                            icsUrl={icsUrl}
-                            onClose={() => setModal((m) => ({...m, icsLinks: false}))}
-                        />
-                    )}
-                </div>
             </nav>
 
-            {modal.servizi && (
-                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
-                    <div
-                        className="bg-white p-6 rounded-3xl w-full max-w-md min-h-[70vh] max-h-[90vh] overflow-y-auto pointer-events-auto"
-                        style={{
-                            transform: "translateY(0)",
-                            transition: "transform 0.3s ease-out",
-                            animation: "slideUp 0.3s ease-out",
-                            boxShadow:
-                                "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(0, 0, 0, 0.05)",
-                        }}
-                    >
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-black">Gestione Servizi</h3>
-                            <button
-                                onClick={() => setModal((m) => ({...m, servizi: false}))}
-                                className="text-gray-500 hover:text-gray-700"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                                     viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                          d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="text-black">
-                            <p className="mb-4">Gestisci tutti i servizi offerti dall'officina.</p>
-                            <button
-                                onClick={() => setModal((m) => ({...m, servizi: false, nuovoServizio: true}))}
-                                className="w-full py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 mb-4"
-                            >
-                                Aggiungi Nuovo Servizio
-                            </button>
-                            <div className="space-y-3">
-                                {servizi.map((servizio) => (
-                                    <div key={servizio.id}
-                                         className="flex justify-between items-center p-3 bg-gray-100 rounded-lg">
-                                        <div>
-                                            <h4 className="font-semibold text-black">{servizio.nome}</h4>
-                                            <p className="text-sm text-gray-600">
-                                                {servizio.prezzo.toFixed(2)} € - {servizio.durata_minuti} min
-                                            </p>
-                                        </div>
-                                        <div className="flex space-x-2">
-                                            <button
-                                                onClick={() => {
-                                                    setCurrentServizio(servizio);
-                                                    setModal((m) => ({...m, servizi: false, modificaServizio: true}));
-                                                }}
-                                                className="text-blue-600 p-1 hover:bg-blue-100 rounded-full"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
-                                                     viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                </svg>
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    handleDeleteServizio(servizio.id);
-                                                    setModal((m) => ({...m, servizi: false}));
-                                                }}
-                                                className="text-red-600 p-1 hover:bg-red-100 rounded-full"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
-                                                     viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            {modal.icsLinks && (
+                <IcsLinksModal
+                    icsUrl={icsUrl}
+                    onClose={() => setModal((m) => ({...m, icsLinks: false}))}
+                />
+            )}
+
+            {modal.nuovoServizio && (
+                <ServizioForm
+                    isOpen={modal.nuovoServizio}
+                    onClose={() => setModal((m) => ({...m, nuovoServizio: false}))}
+                    onSave={handleSaveServizio}
+                />
+            )}
+
+            {modal.modificaServizio && currentServizio && (
+                <ServizioForm
+                    isOpen={modal.modificaServizio}
+                    onClose={() => setModal((m) => ({...m, modificaServizio: false}))}
+                    servizio={currentServizio}
+                    onSave={handleUpdateServizio}
+                />
+            )}
+
+            {modal.modificaOrario && currentGiornoSettimana !== null && (
+                <OrarioForm
+                    isOpen={modal.modificaOrario}
+                    onClose={() => {
+                        setModal((m) => ({...m, modificaOrario: false}));
+                        setCurrentGiornoSettimana(null);
+                    }}
+                    orario={orari.find((o) => o.giorno_settimana === currentGiornoSettimana)}
+                    giornoSettimana={currentGiornoSettimana}
+                    onSave={handleSaveOrario}
+                />
             )}
 
             <PrenotazioniAdminModal
@@ -526,115 +475,6 @@ export default function AdminDashboard() {
                 isOpen={modal.prenotazioni}
                 onClose={() => setModal((m) => ({...m, prenotazioni: false}))}
             />
-
-            {modal.nuovoServizio && (
-                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-auto">
-                    <div
-                        className="bg-white p-0 rounded-t-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 flex flex-col slide-up"
-                        style={{
-                            boxShadow:
-                                "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(0, 0, 0, 0.05)",
-                        }}
-                    >
-                        <div
-                            className="sticky top-0 bg-white z-20 flex justify-between items-center px-8 py-6 border-b border-gray-100">
-                            <h3 className="text-xl font-bold text-black">Nuovo Servizio</h3>
-                            <button
-                                onClick={() => setModal((m) => ({...m, nuovoServizio: false}))}
-                                className="text-gray-500 hover:text-gray-700"
-                                aria-label="Chiudi"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                                     viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                          d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="flex-1 flex flex-col px-2 py-6">
-                            <ServizioForm
-                                onSave={handleSaveServizio}
-                                onCancel={() => setModal((m) => ({...m, nuovoServizio: false}))}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {modal.modificaServizio && currentServizio && (
-                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
-                    <div
-                        className="bg-white p-6 rounded-3xl w-full max-w-md min-h-[70vh] max-h-[90vh] overflow-y-auto pointer-events-auto"
-                        style={{
-                            transform: "translateY(0)",
-                            transition: "transform 0.3s ease-out",
-                            animation: "slideUp 0.3s ease-out",
-                            boxShadow:
-                                "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(0, 0, 0, 0.05)",
-                        }}
-                    >
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-black">Modifica Servizio</h3>
-                            <button
-                                onClick={() => setModal((m) => ({...m, modificaServizio: false}))}
-                                className="text-gray-500 hover:text-gray-700"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                                     viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                          d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <ServizioForm
-                            servizio={currentServizio}
-                            onSave={handleUpdateServizio}
-                            onCancel={() => setModal((m) => ({...m, modificaServizio: false}))}
-                        />
-                    </div>
-                </div>
-            )}
-
-            {modal.modificaOrario && currentGiornoSettimana !== null && (
-                <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
-                    <div
-                        className="bg-white p-6 rounded-3xl w-full max-w-md min-h-[70vh] max-h-[90vh] overflow-y-auto pointer-events-auto"
-                        style={{
-                            transform: "translateY(0)",
-                            transition: "transform 0.3s ease-out",
-                            animation: "slideUp 0.3s ease-out",
-                            boxShadow:
-                                "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(0, 0, 0, 0.05)",
-                        }}
-                    >
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-black">Modifica Orario</h3>
-                            <button
-                                onClick={() => {
-                                    setModal((m) => ({...m, modificaOrario: false}));
-                                    setCurrentGiornoSettimana(null);
-                                }}
-                                className="text-gray-500 hover:text-gray-700"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                                     viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                          d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <OrarioForm
-                            orario={orari.find((o) => o.giorno_settimana === currentGiornoSettimana)}
-                            giornoSettimana={currentGiornoSettimana}
-                            onSave={handleSaveOrario}
-                            onCancel={() => {
-                                setModal((m) => ({...m, modificaOrario: false}));
-                                setCurrentGiornoSettimana(null);
-                            }}
-                        />
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

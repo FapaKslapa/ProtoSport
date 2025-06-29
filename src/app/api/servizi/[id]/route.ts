@@ -5,6 +5,7 @@ import {verifyToken} from '@/lib/auth';
 interface User {
     id: number;
     is_admin: boolean;
+    is_super_admin: boolean;
 }
 
 interface Servizio {
@@ -57,10 +58,10 @@ export async function PUT(request: NextRequest) {
         }
 
         const db = getDb();
-        const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(userId) as User;
-        if (!user?.is_admin) {
+        const user = db.prepare('SELECT is_admin, is_super_admin FROM users WHERE id = ?').get(userId) as User;
+        if (!user?.is_admin && !user?.is_super_admin) {
             return NextResponse.json(
-                {success: false, error: 'Accesso negato: richiesti privilegi di amministratore'},
+                {success: false, error: 'Accesso negato: richiesti privilegi di amministratore o super amministratore'},
                 {status: 403}
             );
         }
@@ -111,10 +112,10 @@ export async function DELETE(request: NextRequest) {
         }
 
         const db = getDb();
-        const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(userId) as User;
-        if (!user?.is_admin) {
+        const user = db.prepare('SELECT is_admin, is_super_admin FROM users WHERE id = ?').get(userId) as User;
+        if (!user?.is_admin && !user?.is_super_admin) {
             return NextResponse.json(
-                {success: false, error: 'Accesso negato: richiesti privilegi di amministratore'},
+                {success: false, error: 'Accesso negato: richiesti privilegi di amministratore o super amministratore'},
                 {status: 403}
             );
         }

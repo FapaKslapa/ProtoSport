@@ -1,4 +1,5 @@
 import React, {useState, useEffect, FormEvent} from "react";
+import Modal from "./Modal";
 import VeicoloCardMini from "./VeicoloCardMini";
 import CardServizioMini from "./CardServizioMini";
 import CalendarElegant from "./CalendarElegant";
@@ -35,22 +36,24 @@ type PrenotazioneData = {
 };
 
 interface PrenotazioneModalProps {
+    isOpen: boolean;
     veicoli: Veicolo[];
     servizi: Servizio[];
     servizioPreselezionato?: number;
     onSave: (data: PrenotazioneData) => void;
-    onCancel: () => void;
+    onClose: () => void;
     isLoading: boolean;
 }
 
 const formatDate = (date: Date): string => date.toISOString().split("T")[0];
 
 const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
+                                                                 isOpen,
                                                                  veicoli,
                                                                  servizi,
                                                                  servizioPreselezionato,
                                                                  onSave,
-                                                                 onCancel,
+                                                                 onClose,
                                                                  isLoading,
                                                              }) => {
     const today = new Date();
@@ -111,82 +114,96 @@ const PrenotazioneModal: React.FC<PrenotazioneModalProps> = ({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Servizio</label>
-                <div className="flex gap-2 overflow-x-auto pb-2 pt-2 px-4">
-                    {servizi.map(s => (
-                        <CardServizioMini
-                            key={s.id}
-                            servizio={s}
-                            selected={servizioId === s.id}
-                            onClick={() => setServizioId(s.id)}
-                        />
-                    ))}
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            maxWidth="max-w-lg"
+            title="Prenota Servizio"
+        >
+            {isLoading ? (
+                <div className="flex justify-center py-10">
+                    <div
+                        className="animate-spin h-8 w-8 border-4 border-red-500 rounded-full border-t-transparent"></div>
                 </div>
-            </div>
-            <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Veicolo</label>
-                <div className="flex gap-2 overflow-x-auto pb-2 pt-2 px-4">
-                    {veicoli.map(v => (
-                        <VeicoloCardMini
-                            key={v.id}
-                            veicolo={v}
-                            selected={veicoloId === v.id}
-                            onClick={() => setVeicoloId(v.id)}
+            ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Servizio</label>
+                        <div className="flex gap-2 overflow-x-auto pb-2 pt-2 px-4">
+                            {servizi.map(s => (
+                                <CardServizioMini
+                                    key={s.id}
+                                    servizio={s}
+                                    selected={servizioId === s.id}
+                                    onClick={() => setServizioId(s.id)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Veicolo</label>
+                        <div className="flex gap-2 overflow-x-auto pb-2 pt-2 px-4">
+                            {veicoli.map(v => (
+                                <VeicoloCardMini
+                                    key={v.id}
+                                    veicolo={v}
+                                    selected={veicoloId === v.id}
+                                    onClick={() => setVeicoloId(v.id)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Data</label>
+                        <CalendarElegant
+                            year={currentYear}
+                            month={currentMonth}
+                            selectedDate={selectedDate}
+                            onSelect={setSelectedDate}
+                            onPrev={handlePrevMonth}
+                            onNext={handleNextMonth}
+                            minDate={today}
                         />
-                    ))}
-                </div>
-            </div>
-            <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Data</label>
-                <CalendarElegant
-                    year={currentYear}
-                    month={currentMonth}
-                    selectedDate={selectedDate}
-                    onSelect={setSelectedDate}
-                    onPrev={handlePrevMonth}
-                    onNext={handleNextMonth}
-                    minDate={today}
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Fascia oraria</label>
-                <FasceOrarie
-                    fasce={fasce}
-                    selected={oraInizio}
-                    onSelect={setOraInizio}
-                    isLoading={isLoadingFasce}
-                    oraFiltro={oraFiltro}
-                    setOraFiltro={setOraFiltro}
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-semibold text-black">Note (opzionale)</label>
-                <textarea
-                    className="mt-1 block w-full rounded-xl p-2 bg-white text-black shadow focus:ring-2 focus:ring-red-400 border border-gray-200 focus:border-red-400 focus:outline-none transition"
-                    value={note}
-                    onChange={e => setNote(e.target.value)}
-                    rows={3}
-                />
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-                <button
-                    type="button"
-                    className="px-4 py-2 rounded-xl bg-gray-200 text-gray-700 font-semibold"
-                    onClick={onCancel}
-                >
-                    Annulla
-                </button>
-                <button
-                    type="submit"
-                    className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold shadow"
-                    disabled={isLoadingFasce || fasce.length === 0}
-                >
-                    Prenota
-                </button>
-            </div>
-        </form>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Fascia oraria</label>
+                        <FasceOrarie
+                            fasce={fasce}
+                            selected={oraInizio}
+                            onSelect={setOraInizio}
+                            isLoading={isLoadingFasce}
+                            oraFiltro={oraFiltro}
+                            setOraFiltro={setOraFiltro}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-black">Note (opzionale)</label>
+                        <textarea
+                            className="mt-1 block w-full rounded-xl p-2 bg-white text-black shadow focus:ring-2 focus:ring-red-400 border border-gray-200 focus:border-red-400 focus:outline-none transition"
+                            value={note}
+                            onChange={e => setNote(e.target.value)}
+                            rows={3}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2 mt-4">
+                        <button
+                            type="button"
+                            className="px-4 py-2 rounded-xl bg-gray-200 text-gray-700 font-semibold"
+                            onClick={onClose}
+                        >
+                            Annulla
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold shadow"
+                            disabled={isLoadingFasce || fasce.length === 0}
+                        >
+                            Prenota
+                        </button>
+                    </div>
+                </form>
+            )}
+        </Modal>
     );
 };
 
