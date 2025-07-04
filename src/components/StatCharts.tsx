@@ -31,7 +31,6 @@ export default function StatCharts({
                 <FaChartLine className="text-rose-500"/> Analisi visiva
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8 w-full">
-                {/* Prenotazioni mensili */}
                 <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100 flex flex-col min-w-0">
                     <div className="flex items-center mb-2 gap-2">
                         <FaChartLine className="text-rose-500 text-lg"/>
@@ -80,7 +79,6 @@ export default function StatCharts({
                         </ResponsiveContainer>
                     </div>
                 </div>
-                {/* Profitti mensili */}
                 <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100 flex flex-col min-w-0">
                     <div className="flex items-center mb-2 gap-2">
                         <FaEuroSign className="text-rose-500 text-lg"/>
@@ -115,7 +113,6 @@ export default function StatCharts({
                         </ResponsiveContainer>
                     </div>
                 </div>
-                {/* Nuovi utenti per mese */}
                 <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100 flex flex-col min-w-0">
                     <div className="flex items-center mb-2 gap-2">
                         <FaUserPlus className="text-rose-500 text-lg"/>
