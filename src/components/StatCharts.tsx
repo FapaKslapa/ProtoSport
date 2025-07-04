@@ -13,7 +13,7 @@ import {
     Area
 } from "recharts";
 import {FaChartLine, FaEuroSign, FaUserPlus} from "react-icons/fa";
-import {Statistiche} from "./page";
+import type { Statistiche } from "@/types/statistche";
 import CustomTooltip from "./StatTooltip";
 
 export default function StatCharts({
